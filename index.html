@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Options Trading Journal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>📈 Options Trading Journal</h1>
+            <nav class="tab-nav">
+                <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+                <button class="tab-btn" data-tab="add-trade">Add Trade</button>
+                <button class="tab-btn" data-tab="import-data">Import Data</button>
+                <button class="tab-btn" data-tab="trade-history">Trade History</button>
+                <button class="tab-btn" data-tab="chatbot">Chatbot</button>
+                <button class="tab-btn" data-tab="notes">Notes & Lessons</button>
+                <button class="tab-btn" data-tab="export">Export</button>
+            </nav>
+        </header>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>Total P&L</h3>
+                    <div id="total-pl" class="metric-value">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Win Rate</h3>
+                    <div id="win-rate" class="metric-value">0%</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Avg Win</h3>
+                    <div id="avg-win" class="metric-value positive">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Avg Loss</h3>
+                    <div id="avg-loss" class="metric-value negative">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Total Trades</h3>
+                    <div id="total-trades" class="metric-value">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Current Streak</h3>
+                    <div id="current-streak" class="metric-value">0</div>
+                </div>
+            </div>
+
+            <div class="filters-section">
+                <div class="filters">
+                    <select id="ticker-filter">
+                        <option value="">All Tickers</option>
+                    </select>
+                    <select id="strategy-filter">
+                        <option value="">All Strategies</option>
+                        <option value="Call Spread">Call Spread</option>
+                        <option value="Put Spread">Put Spread</option>
+                        <option value="Iron Condor">Iron Condor</option>
+                        <option value="Single Leg">Single Leg</option>
+                        <option value="Long Put">Long Put</option>
+                        <option value="Long Call">Long Call</option>
+                        <option value="Short Call">Short Call</option>
+                        <option value="Multi-leg">Multi-leg</option>
+                    </select>
+                    <input type="date" id="date-from" placeholder="From Date">
+                    <input type="date" id="date-to" placeholder="To Date">
+                    <button id="apply-filters" class="btn">Apply Filters</button>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>P&L Over Time</h3>
+                    <canvas id="pl-over-time"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Performance by Strategy</h3>
+                    <canvas id="strategy-performance"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Top Tickers</h3>
+                    <canvas id="top-tickers"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Monthly P&L</h3>
+                    <canvas id="monthly-pl"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Trade Tab -->
+        <div id="add-trade" class="tab-content">
+            <div class="form-section">
+                <h2>Add New Trade</h2>
+                <form id="trade-form" class="trade-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="trade-date">Trade Date *</label>
+                            <input type="date" id="trade-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="ticker">Ticker Symbol *</label>
+                            <input type="text" id="ticker" required placeholder="e.g., TSLA">
+                        </div>
+                        <div class="form-group">
+                            <label for="strategy">Strategy *</label>
+                            <select id="strategy" required>
+                                <option value="">Select Strategy</option>
+                                <option value="Call Spread">Call Spread</option>
+                                <option value="Put Spread">Put Spread</option>
+                                <option value="Iron Condor">Iron Condor</option>
+                                <option value="Single Leg">Single Leg</option>
+                                <option value="Long Put">Long Put</option>
+                                <option value="Long Call">Long Call</option>
+                                <option value="Short Call">Short Call</option>
+                                <option value="Multi-leg">Multi-leg</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="strike">Strike Price *</label>
+                            <input type="text" id="strike" required placeholder="e.g., 350 or 350-360">
+                        </div>
+                        <div class="form-group">
+                            <label for="expiration">Expiration Date *</label>
+                            <input type="date" id="expiration" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="option-type">Option Type *</label>
+                            <select id="option-type" required>
+                                <option value="">Select Type</option>
+                                <option value="CALL">CALL</option>
+                                <option value="PUT">PUT</option>
+                                <option value="CALL/PUT">CALL/PUT</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="entry-price">Entry Price</label>
+                            <input type="number" id="entry-price" step="0.01" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="exit-price">Exit Price</label>
+                            <input type="number" id="exit-price" step="0.01" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="quantity">Quantity *</label>
+                            <input type="number" id="quantity" required min="1" value="1">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="premium">Premium *</label>
+                            <input type="number" id="premium" required step="0.01" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="fees">Fees</label>
+                            <input type="number" id="fees" step="0.01" value="-0.27">
+                        </div>
+                        <div class="form-group">
+                            <label for="net-pl">Net P&L (calculated)</label>
+                            <input type="number" id="net-pl" step="0.01" readonly>
+                        </div>
+                    </div>
+
+                    <h3>Greek Values</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="delta">Delta</label>
+                            <input type="number" id="delta" step="0.01" min="-1" max="1" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="gamma">Gamma</label>
+                            <input type="number" id="gamma" step="0.01" min="0" max="1" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="theta">Theta</label>
+                            <input type="number" id="theta" step="0.01" min="-1" max="0" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="vega">Vega</label>
+                            <input type="number" id="vega" step="0.01" min="0" max="1" placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trade-notes">Trade Notes</label>
+                        <textarea id="trade-notes" rows="3" placeholder="Optional notes about this trade..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="decision-rationale">Decision Rationale</label>
+                        <textarea id="decision-rationale" rows="3" placeholder="Why did you make this trade?"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add Trade</button>
+                        <button type="reset" class="btn btn-secondary">Reset Form</button>
+                    </div>
+                </form>
+                <div id="add-trade-message" class="message"></div>
+            </div>
+        </div>
+
+        <!-- Import Data Tab -->
+        <div id="import-data" class="tab-content">
+            <div class="import-section">
+                <h2>Import Trading Data</h2>
+
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-content">
+                        <div class="upload-icon">📄</div>
+                        <p>Drag and drop your CSV file here, or click to browse</p>
+                        <input type="file" id="csv-file" accept=".csv" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="import-options">
+                    <div class="form-group">
+                        <label for="directory-path">Directory Path (optional)</label>
+                        <input type="text" id="directory-path" placeholder="C:\Users\YourName\Documents\">
+                    </div>
+                    <div class="form-group">
+                        <label for="filename">Filename (optional)</label>
+                        <input type="text" id="filename" placeholder="trading_data.csv">
+                    </div>
+                </div>
+
+                <div class="import-actions">
+                    <button id="upload-preview" class="btn btn-primary">Upload & Preview</button>
+                </div>
+
+                <div id="preview-section" class="preview-section" style="display: none;">
+                    <h3>Data Preview</h3>
+                    <div class="preview-status">
+                        <span id="preview-status">Data Previewed - Not Saved Yet</span>
+                        <span id="preview-count">Previewing 0 trades</span>
+                    </div>
+
+                    <div class="import-mode">
+                        <label>
+                            <input type="radio" name="import-mode" value="append" checked>
+                            Append to existing data
+                        </label>
+                        <label>
+                            <input type="radio" name="import-mode" value="replace">
+                            Replace all existing data
+                        </label>
+                    </div>
+
+                    <div class="preview-table-container">
+                        <table id="preview-table">
+                            <thead></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <div class="commit-actions">
+                        <button id="commit-save" class="btn btn-success">COMMIT & SAVE</button>
+                        <button id="cancel-import" class="btn btn-secondary">Cancel Import</button>
+                    </div>
+                </div>
+                <div id="import-message" class="message"></div>
+            </div>
+        </div>
+
+        <!-- Trade History Tab -->
+        <div id="trade-history" class="tab-content">
+            <div class="history-section">
+                <h2>Trade History</h2>
+
+                <div class="table-controls">
+                    <div class="search-filters">
+                        <input type="text" id="search-trades" placeholder="Search trades...">
+                        <select id="history-ticker-filter">
+                            <option value="">All Tickers</option>
+                        </select>
+                        <select id="history-strategy-filter">
+                            <option value="">All Strategies</option>
+                        </select>
+                        <input type="date" id="history-date-from">
+                        <input type="date" id="history-date-to">
+                        <button id="clear-filters" class="btn btn-secondary">Clear Filters</button>
+                    </div>
+
+                    <div class="bulk-actions">
+                        <button id="select-all-trades" class="btn btn-secondary">Select All</button>
+                        <button id="delete-selected" class="btn btn-danger">Delete Selected</button>
+                        <button id="clear-all-trades" class="btn btn-danger">Clear All Trades</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="trades-table" class="trades-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="select-all-checkbox"></th>
+                                <th class="sortable" data-sort="date">Date</th>
+                                <th class="sortable" data-sort="ticker">Ticker</th>
+                                <th class="sortable" data-sort="strategy">Strategy</th>
+                                <th class="sortable" data-sort="strike">Strike</th>
+                                <th class="sortable" data-sort="entry_price">Entry</th>
+                                <th class="sortable" data-sort="exit_price">Exit</th>
+                                <th class="sortable" data-sort="premium">Premium</th>
+                                <th class="sortable" data-sort="net_pl">Net P&L</th>
+                                <th class="sortable" data-sort="outcome">Outcome</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="pagination">
+                    <span id="table-info">Showing 0 trades</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chatbot Tab -->
+        <div id="chatbot" class="tab-content">
+            <div class="chatbot-section">
+                <h2>Trading Journal Assistant</h2>
+
+                <div class="chat-container">
+                    <div id="chat-messages" class="chat-messages"></div>
+
+                    <div class="chat-examples">
+                        <h4>Try these queries:</h4>
+                        <div class="example-queries">
+                            <button class="example-query">Show all losing trades on TSLA</button>
+                            <button class="example-query">What was my average gamma on profitable trades?</button>
+                            <button class="example-query">Which strategies yielded most consistent gains?</button>
+                            <button class="example-query">Show my best performing ticker this year</button>
+                            <button class="example-query">What's my win rate for Iron Condor trades?</button>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-section">
+                        <input type="text" id="chat-input" placeholder="Ask about your trades..." maxlength="200">
+                        <button id="send-chat" class="btn btn-primary">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes & Lessons Tab -->
+        <div id="notes" class="tab-content">
+            <div class="notes-section">
+                <h2>Notes & Lessons</h2>
+
+                <div class="notes-container">
+                    <div class="notes-category">
+                        <h3 class="collapsible">📝 Trading Notes</h3>
+                        <div class="collapsible-content">
+                            <textarea id="trading-notes" rows="6" placeholder="Record your daily trading notes..."></textarea>
+                            <button id="save-trading-notes" class="btn btn-primary">Save Notes</button>
+                            <div id="saved-trading-notes"></div>
+                        </div>
+                    </div>
+
+                    <div class="notes-category">
+                        <h3 class="collapsible">💡 Lessons Learned</h3>
+                        <div class="collapsible-content">
+                            <div class="lesson-input">
+                                <input type="text" id="new-lesson" placeholder="Add a new lesson...">
+                                <select id="lesson-category">
+                                    <option value="Strategy">Strategy</option>
+                                    <option value="Psychology">Psychology</option>
+                                    <option value="Risk Management">Risk Management</option>
+                                    <option value="Technical Analysis">Technical Analysis</option>
+                                </select>
+                                <button id="add-lesson" class="btn btn-primary">Add Lesson</button>
+                            </div>
+                            <div id="lessons-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="notes-category">
+                        <h3 class="collapsible">⚠️ Mistakes Made</h3>
+                        <div class="collapsible-content">
+                            <div class="mistake-input">
+                                <textarea id="new-mistake" rows="3" placeholder="Describe a mistake and how to avoid it..."></textarea>
+                                <button id="add-mistake" class="btn btn-primary">Add Mistake</button>
+                            </div>
+                            <div id="mistakes-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="notes-category">
+                        <h3 class="collapsible">✅ Action Items</h3>
+                        <div class="collapsible-content">
+                            <div class="action-input">
+                                <input type="text" id="new-action" placeholder="Add action item...">
+                                <input type="date" id="action-due-date">
+                                <select id="action-priority">
+                                    <option value="Low">Low Priority</option>
+                                    <option value="Medium">Medium Priority</option>
+                                    <option value="High">High Priority</option>
+                                </select>
+                                <button id="add-action" class="btn btn-primary">Add Action</button>
+                            </div>
+
+                            <div class="action-filters">
+                                <button class="filter-btn active" data-filter="all">All</button>
+                                <button class="filter-btn" data-filter="active">Active</button>
+                                <button class="filter-btn" data-filter="completed">Completed</button>
+                            </div>
+
+                            <div id="actions-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Tab -->
+        <div id="export" class="tab-content">
+            <div class="export-section">
+                <h2>Export & Reports</h2>
+
+                <div class="export-options">
+                    <div class="export-card">
+                        <h3>📄 CSV Export</h3>
+                        <p>Export your trade data as a CSV file for analysis or backup.</p>
+                        <div class="date-range">
+                            <label>Date Range (optional):</label>
+                            <input type="date" id="export-date-from">
+                            <input type="date" id="export-date-to">
+                        </div>
+                        <button id="export-csv" class="btn btn-primary">Download CSV</button>
+                    </div>
+
+                    <div class="export-card">
+                        <h3>📊 PDF Report</h3>
+                        <p>Generate a comprehensive trading report with charts and metrics.</p>
+                        <div class="report-options">
+                            <label><input type="checkbox" id="include-metrics" checked> Include Metrics</label>
+                            <label><input type="checkbox" id="include-charts" checked> Include Charts</label>
+                            <label><input type="checkbox" id="include-trades" checked> Include Trade List</label>
+                            <label><input type="checkbox" id="include-notes"> Include Notes</label>
+                        </div>
+                        <button id="export-pdf" class="btn btn-primary">Generate PDF</button>
+                    </div>
+
+                    <div class="export-card">
+                        <h3>💾 JSON Backup</h3>
+                        <p>Complete backup of all your data including notes and settings.</p>
+                        <button id="export-json" class="btn btn-primary">Download Backup</button>
+                        <button id="import-json" class="btn btn-secondary">Import Backup</button>
+                        <input type="file" id="json-file" accept=".json" style="display: none;">
+                    </div>
+
+                    <div class="export-card">
+                        <h3>⚡ Quick Actions</h3>
+                        <p>Fast export options for common use cases.</p>
+                        <button id="export-last-30" class="btn btn-secondary">Export Last 30 Days</button>
+                        <button id="export-this-month" class="btn btn-secondary">Export This Month</button>
+                        <button id="export-this-year" class="btn btn-secondary">Export This Year</button>
+                    </div>
+                </div>
+
+                <div id="export-message" class="message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/idb@7/build/umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
