@@ -201,150 +201,149 @@ class TradingJournal {
         }
     }
 
-    // ============================================================================
-    // VIEW DETAILS FUNCTIONALITY (NEW!)
-    // ============================================================================
+ // QUICK PATCH - Replace the viewTradeDetails function in your app.js
+// Find the viewTradeDetails function (around line 205-340) and replace it with this:
+
+async viewTradeDetails(id) {
+    console.log('👁️ Opening view details modal for trade:', id);
     
-    async viewTradeDetails(id) {
-        console.log('👁️ Opening view details modal for trade:', id);
+    try {
+        const trade = await this.db.get('trades', id);
+        if (!trade) {
+            this.showMessage('error', 'Trade not found');
+            return;
+        }
         
-        try {
-            const trade = await this.db.get('trades', id);
-            if (!trade) {
-                this.showMessage('error', 'Trade not found');
-                return;
-            }
-            
-            console.log('Trade details:', trade);
-            
-            // Populate the view details modal
-            const content = `
-                <div class="trade-details-grid">
-                    <div class="detail-section">
-                        <h3>📊 Basic Information</h3>
-                        <div class="detail-item">
-                            <span class="detail-label">Date:</span>
-                            <span class="detail-value">${new Date(trade.date).toLocaleDateString()}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Ticker:</span>
-                            <span class="detail-value">${trade.ticker || 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Strategy:</span>
-                            <span class="detail-value">${trade.strategy || 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Option Type:</span>
-                            <span class="detail-value">${trade.option_type || 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Strike:</span>
-                            <span class="detail-value">${trade.strike || 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Expiration:</span>
-                            <span class="detail-value">${trade.expiration ? new Date(trade.expiration).toLocaleDateString() : 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Quantity:</span>
-                            <span class="detail-value">${trade.quantity || 'N/A'}</span>
-                        </div>
+        console.log('Trade details:', trade);
+        
+        // Helper function to safely format numbers
+        const safeNumber = (value, decimals = 4) => {
+            if (!value || value === '' || value === 'N/A') return 'N/A';
+            const num = parseFloat(value);
+            return !isNaN(num) ? num.toFixed(decimals) : 'N/A';
+        };
+        
+        const content = `
+            <div class="trade-details-grid">
+                <div class="detail-section">
+                    <h3>📊 Basic Information</h3>
+                    <div class="detail-item">
+                        <span class="detail-label">Date:</span>
+                        <span class="detail-value">${new Date(trade.date).toLocaleDateString()}</span>
                     </div>
-
-                    <div class="detail-section">
-                        <h3>💰 Pricing & P&L</h3>
-                        <div class="detail-item">
-                            <span class="detail-label">Entry Price:</span>
-                            <span class="detail-value">${trade.entry_price ? this.formatCurrency(trade.entry_price) : 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Exit Price:</span>
-                            <span class="detail-value">${trade.exit_price ? this.formatCurrency(trade.exit_price) : 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Premium:</span>
-                            <span class="detail-value">${this.formatCurrency(trade.premium || 0)}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Fees:</span>
-                            <span class="detail-value">${this.formatCurrency(trade.fees || 0)}</span>
-                        </div>
-                        <div class="detail-item highlight">
-                            <span class="detail-label"><strong>Net P&L:</strong></span>
-                            <span class="detail-value ${(trade.net_pl || 0) >= 0 ? 'positive' : 'negative'}">
-                                <strong>${this.formatCurrency(trade.net_pl || 0)}</strong>
-                            </span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Outcome:</span>
-                            <span class="detail-value outcome-${(trade.outcome || 'loss').toLowerCase()}">
-                                ${trade.outcome || 'Loss'}
-                            </span>
-                        </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Ticker:</span>
+                        <span class="detail-value">${trade.ticker || 'N/A'}</span>
                     </div>
-
-                    <div class="detail-section">
-                        <h3>📈 Greeks</h3>
-                        <div class="detail-item">
-                            <span class="detail-label">Delta (Δ):</span>
-                            <span class="detail-value">${trade.delta !== null && trade.delta !== undefined ? trade.delta.toFixed(4) : 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Gamma (Γ):</span>
-                            <span class="detail-value">${trade.gamma !== null && trade.gamma !== undefined ? trade.gamma.toFixed(4) : 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Theta (Θ):</span>
-                            <span class="detail-value">${trade.theta !== null && trade.theta !== undefined ? trade.theta.toFixed(4) : 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Vega (ν):</span>
-                            <span class="detail-value">${trade.vega !== null && trade.vega !== undefined ? trade.vega.toFixed(4) : 'N/A'}</span>
-                        </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Strategy:</span>
+                        <span class="detail-value">${trade.strategy || 'N/A'}</span>
                     </div>
-
-                    ${trade.trade_notes ? `
-                    <div class="detail-section notes-section">
-                        <h3>📝 Trade Notes</h3>
-                        <div class="trade-notes-display">
-                            ${trade.trade_notes}
-                        </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Option Type:</span>
+                        <span class="detail-value">${trade.option_type || 'N/A'}</span>
                     </div>
-                    ` : ''}
-
-                    <div class="detail-section">
-                        <h3>🕐 Timestamps</h3>
-                        <div class="detail-item">
-                            <span class="detail-label">Created:</span>
-                            <span class="detail-value">${trade.created_at ? new Date(trade.created_at).toLocaleString() : 'N/A'}</span>
-                        </div>
-                        ${trade.updated_at ? `
-                        <div class="detail-item">
-                            <span class="detail-label">Last Updated:</span>
-                            <span class="detail-value">${new Date(trade.updated_at).toLocaleString()}</span>
-                        </div>
-                        ` : ''}
+                    <div class="detail-item">
+                        <span class="detail-label">Strike:</span>
+                        <span class="detail-value">${trade.strike || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Expiration:</span>
+                        <span class="detail-value">${trade.expiration ? new Date(trade.expiration).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Quantity:</span>
+                        <span class="detail-value">${trade.quantity || 'N/A'}</span>
                     </div>
                 </div>
-            `;
-            
-            document.getElementById('view-details-content').innerHTML = content;
-            document.getElementById('view-trade-modal').style.display = 'flex';
-            
-            console.log('✅ View details modal opened');
-            
-        } catch (error) {
-            console.error('❌ Error loading trade details:', error);
-            this.showMessage('error', 'Failed to load trade details');
-        }
-    }
-    
-    closeViewModal() {
-        console.log('❌ Closing view details modal');
-        document.getElementById('view-trade-modal').style.display = 'none';
-    }
 
+                <div class="detail-section">
+                    <h3>💰 Pricing & P&L</h3>
+                    <div class="detail-item">
+                        <span class="detail-label">Entry Price:</span>
+                        <span class="detail-value">${trade.entry_price ? this.formatCurrency(trade.entry_price) : 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Exit Price:</span>
+                        <span class="detail-value">${trade.exit_price ? this.formatCurrency(trade.exit_price) : 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Premium:</span>
+                        <span class="detail-value">${this.formatCurrency(trade.premium || 0)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Fees:</span>
+                        <span class="detail-value">${this.formatCurrency(trade.fees || 0)}</span>
+                    </div>
+                    <div class="detail-item highlight">
+                        <span class="detail-label"><strong>Net P&L:</strong></span>
+                        <span class="detail-value ${(trade.net_pl || 0) >= 0 ? 'positive' : 'negative'}">
+                            <strong>${this.formatCurrency(trade.net_pl || 0)}</strong>
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Outcome:</span>
+                        <span class="detail-value outcome-${(trade.outcome || 'loss').toLowerCase()}">
+                            ${trade.outcome || 'Loss'}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>📈 Greeks</h3>
+                    <div class="detail-item">
+                        <span class="detail-label">Delta (Δ):</span>
+                        <span class="detail-value">${safeNumber(trade.delta)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Gamma (Γ):</span>
+                        <span class="detail-value">${safeNumber(trade.gamma)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Theta (Θ):</span>
+                        <span class="detail-value">${safeNumber(trade.theta)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Vega (ν):</span>
+                        <span class="detail-value">${safeNumber(trade.vega)}</span>
+                    </div>
+                </div>
+
+                ${trade.trade_notes ? `
+                <div class="detail-section notes-section">
+                    <h3>📝 Trade Notes</h3>
+                    <div class="trade-notes-display">
+                        ${trade.trade_notes}
+                    </div>
+                </div>
+                ` : ''}
+
+                <div class="detail-section">
+                    <h3>🕐 Timestamps</h3>
+                    <div class="detail-item">
+                        <span class="detail-label">Created:</span>
+                        <span class="detail-value">${trade.created_at ? new Date(trade.created_at).toLocaleString() : 'N/A'}</span>
+                    </div>
+                    ${trade.updated_at ? `
+                    <div class="detail-item">
+                        <span class="detail-label">Last Updated:</span>
+                        <span class="detail-value">${new Date(trade.updated_at).toLocaleString()}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('view-details-content').innerHTML = content;
+        document.getElementById('view-trade-modal').style.display = 'flex';
+        
+        console.log('✅ View details modal opened');
+        
+    } catch (error) {
+        console.error('❌ Error loading trade details:', error);
+        this.showMessage('error', 'Failed to load trade details: ' + error.message);
+    }
+}
     // ============================================================================
     // ADD TRADE
     // ============================================================================
