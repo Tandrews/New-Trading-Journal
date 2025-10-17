@@ -1805,6 +1805,101 @@ textarea:focus {
     }
 }
 
+<!-- =============================================================================
+     ADD THIS CSS TO YOUR style.css (at the end of the file)
+     ============================================================================= -->
+
+<style>
+/* View Details Modal Styles */
+.trade-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.detail-section {
+    background: #1a1c23;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.detail-section h3 {
+    color: #00ff88;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    border-bottom: 2px solid #333;
+    padding-bottom: 0.5rem;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #2a2c33;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    color: #999;
+    font-weight: 500;
+}
+
+.detail-value {
+    color: #fff;
+    font-weight: 600;
+    text-align: right;
+}
+
+.detail-item.highlight {
+    background: rgba(0, 255, 136, 0.05);
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+}
+
+.notes-section {
+    grid-column: 1 / -1;
+}
+
+.trade-notes-display {
+    background: #0f1015;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 1rem;
+    color: #fff;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    min-height: 60px;
+    line-height: 1.6;
+}
+
+.btn-info {
+    background: #00aaff;
+    color: white;
+}
+
+.btn-info:hover {
+    background: #0088cc;
+}
+
+/* Update action buttons spacing */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.action-buttons .btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 1rem;
+    min-width: 40px;
+}
+</style>
+
 /* ============================================================================
    END OF COMPLETE style.css FILE
    ============================================================================ */
