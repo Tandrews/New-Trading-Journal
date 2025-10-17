@@ -1,16 +1,18 @@
 // =============================================================================
-// COMPLETELY REBUILT app.js - GUARANTEED WORKING VERSION
-// Version: 2.0 - Full Rewrite with Comprehensive Error Handling
+// COMPLETE FIXED app.js v2.1 - Proper CSV Parsing + Charts
+// =============================================================================
+// Fixes: Proper CSV parsing that handles quoted fields with commas
+// Added: All 5 interactive charts
 // =============================================================================
 
-console.log('🚀 Loading Trading Journal v2.0...');
+console.log('🚀 Loading Trading Journal v2.1 with Charts...');
 
 class TradingJournal {
     constructor() {
         console.log('📦 Constructing TradingJournal...');
         this.db = null;
         this.dbName = 'tradingJournalDB';
-        this.version = 3; // BUMPED VERSION TO FORCE CLEAN START
+        this.version = 3;
         this.trades = [];
         this.filteredTrades = [];
         this.currentTab = 'dashboard';
@@ -30,14 +32,13 @@ class TradingJournal {
         try {
             console.log('🔧 Starting initialization...');
             
-            // Check dependencies
             if (typeof idb === 'undefined') {
                 throw new Error('❌ IDB library not loaded!');
             }
             console.log('✅ IDB library loaded');
             
             if (typeof Chart === 'undefined') {
-                console.log('⚠️ Chart.js not loaded yet, charts may not work');
+                console.log('⚠️ Chart.js not loaded yet');
             } else {
                 console.log('✅ Chart.js loaded');
             }
@@ -47,14 +48,14 @@ class TradingJournal {
             await this.loadPortfolioSettings();
             this.setupEventListeners();
             this.showTab('dashboard');
-            this.updateDashboard();
+            await this.updateDashboard();
             
             console.log('🎉 Trading Journal initialized successfully!');
             this.showMessage('success', 'Trading Journal loaded successfully!');
             
         } catch (error) {
             console.error('💥 INITIALIZATION FAILED:', error);
-            alert('Failed to initialize app: ' + error.message + '\n\nCheck console for details (F12)');
+            alert('Failed to initialize app: ' + error.message);
         }
     }
 
@@ -66,7 +67,6 @@ class TradingJournal {
                 upgrade(db, oldVersion, newVersion, transaction) {
                     console.log(`📊 Upgrading database from v${oldVersion} to v${newVersion}`);
                     
-                    // Create or upgrade trades store
                     if (!db.objectStoreNames.contains('trades')) {
                         console.log('Creating trades store...');
                         const tradesStore = db.createObjectStore('trades', {
@@ -79,14 +79,12 @@ class TradingJournal {
                         console.log('✅ Trades store created');
                     }
                     
-                    // Create portfolio settings store
                     if (!db.objectStoreNames.contains('portfolioSettings')) {
                         console.log('Creating portfolioSettings store...');
                         db.createObjectStore('portfolioSettings', { keyPath: 'id' });
                         console.log('✅ Portfolio settings store created');
                     }
                     
-                    // Create portfolio history store
                     if (!db.objectStoreNames.contains('portfolioHistory')) {
                         console.log('Creating portfolioHistory store...');
                         const historyStore = db.createObjectStore('portfolioHistory', {
@@ -98,13 +96,6 @@ class TradingJournal {
                     }
                     
                     console.log('✅ Database upgrade complete');
-                },
-                blocked() {
-                    console.error('❌ Database blocked - close other tabs with this site');
-                    alert('Please close other tabs with this trading journal open');
-                },
-                blocking() {
-                    console.warn('⚠️ This tab is blocking database upgrade');
                 }
             });
             
@@ -144,7 +135,7 @@ class TradingJournal {
                 this.currentBalance = settings.currentBalance || 0;
                 console.log(`✅ Portfolio loaded: Capital=${this.startingCapital}, Balance=${this.currentBalance}`);
             } else {
-                console.log('ℹ️ No portfolio settings found (this is normal for first run)');
+                console.log('ℹ️ No portfolio settings found');
             }
             
             this.portfolioHistory = await this.db.getAll('portfolioHistory') || [];
@@ -199,8 +190,6 @@ class TradingJournal {
                     this.handlePortfolioSettings(e);
                 });
                 console.log('✅ Portfolio form listener attached');
-            } else {
-                console.warn('⚠️ Portfolio form not found');
             }
             
             // CSV file upload
@@ -211,8 +200,6 @@ class TradingJournal {
                     this.handleFileUpload(e);
                 });
                 console.log('✅ File upload listener attached');
-            } else {
-                console.warn('⚠️ File upload input not found');
             }
             
             // Commit import button
@@ -223,8 +210,6 @@ class TradingJournal {
                     this.commitImport();
                 });
                 console.log('✅ Commit button listener attached');
-            } else {
-                console.warn('⚠️ Commit button not found');
             }
             
             console.log('✅ All event listeners set up');
@@ -260,13 +245,12 @@ class TradingJournal {
             const saved = await this.savePortfolioSettings();
             
             if (saved) {
-                this.updateDashboard();
+                await this.updateDashboard();
                 this.closePortfolioModal();
                 this.showMessage('success', `Portfolio settings saved! Capital: ${this.formatCurrency(newStartingCapital)}, Balance: ${this.formatCurrency(newCurrentBalance)}`);
                 console.log('✅ Portfolio settings saved successfully');
             } else {
                 this.showMessage('error', 'Failed to save portfolio settings');
-                console.error('❌ Portfolio save failed');
             }
             
         } catch (error) {
@@ -277,10 +261,7 @@ class TradingJournal {
 
     handleFileUpload(e) {
         const file = e.target.files[0];
-        if (!file) {
-            console.log('No file selected');
-            return;
-        }
+        if (!file) return;
         
         console.log('📄 Reading file:', file.name);
         
@@ -298,9 +279,32 @@ class TradingJournal {
         reader.readAsText(file);
     }
 
+    // FIXED: Proper CSV parser that handles quoted fields
+    parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        result.push(current.trim());
+        return result;
+    }
+
     parseCSV(csvContent) {
         try {
-            console.log('📊 Parsing CSV...');
+            console.log('📊 Parsing CSV with proper quoted field handling...');
             
             const lines = csvContent.split('\n').map(line => line.trim()).filter(line => line);
             if (lines.length < 2) {
@@ -308,37 +312,60 @@ class TradingJournal {
                 return;
             }
             
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '').toLowerCase().replace(/\s+/g, '_'));
-            console.log('📋 Headers:', headers);
+            // Parse header with proper quote handling
+            const headers = this.parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, '_'));
+            console.log('📋 Headers found:', headers.length);
+            console.log('📋 Sample headers:', headers.slice(0, 10));
             
             const trades = [];
+            let skipped = 0;
             
             for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-                if (values.length !== headers.length) continue;
+                const values = this.parseCSVLine(lines[i]);
+                
+                // Handle column count mismatch
+                if (values.length < headers.length) {
+                    // Pad with empty strings
+                    while (values.length < headers.length) {
+                        values.push('');
+                    }
+                }
                 
                 const trade = {};
                 headers.forEach((header, index) => {
-                    trade[header] = values[index];
+                    trade[header] = values[index] || '';
                 });
                 
-                // Validate required fields
-                if (!trade.date || !trade.ticker) continue;
+                // More lenient validation - only require date and ticker
+                if (!trade.date || trade.date === '') {
+                    skipped++;
+                    continue;
+                }
+                
+                if (!trade.ticker || trade.ticker === '') {
+                    skipped++;
+                    continue;
+                }
                 
                 // Parse numeric fields
                 trade.net_pl = parseFloat(trade.net_pl || trade.net_p_l || 0);
                 trade.premium = parseFloat(trade.premium || 0);
                 trade.fees = parseFloat(trade.fees || -0.65);
                 trade.quantity = parseInt(trade.quantity || 1);
+                trade.entry_price = trade.entry_price ? parseFloat(trade.entry_price) : null;
+                trade.exit_price = trade.exit_price ? parseFloat(trade.exit_price) : null;
+                
+                // Clean up fields
                 trade.ticker = trade.ticker.toUpperCase();
                 trade.strategy = trade.strategy || 'Unknown';
-                trade.outcome = (trade.net_pl >= 0) ? 'Win' : 'Loss';
+                trade.outcome = trade.outcome || ((trade.net_pl >= 0) ? 'Win' : 'Loss');
                 trade.created_at = new Date().toISOString();
                 
                 trades.push(trade);
             }
             
-            console.log(`✅ Parsed ${trades.length} trades`);
+            console.log(`✅ Parsed ${trades.length} trades (skipped ${skipped} invalid rows)`);
+            console.log(`📊 Total lines in CSV: ${lines.length - 1}, Successfully parsed: ${trades.length}`);
             
             if (trades.length === 0) {
                 this.showMessage('error', 'No valid trades found in CSV');
@@ -380,7 +407,7 @@ class TradingJournal {
                     </tr>
                 </thead>
                 <tbody>
-                    ${trades.slice(0, 10).map(trade => `
+                    ${trades.slice(0, 20).map(trade => `
                         <tr>
                             <td>${new Date(trade.date).toLocaleDateString()}</td>
                             <td>${trade.ticker}</td>
@@ -391,11 +418,11 @@ class TradingJournal {
                             <td class="outcome-${(trade.outcome || 'loss').toLowerCase()}">${trade.outcome || 'Loss'}</td>
                         </tr>
                     `).join('')}
-                    ${trades.length > 10 ? `<tr><td colspan="5">... and ${trades.length - 10} more trades</td></tr>` : ''}
+                    ${trades.length > 20 ? `<tr><td colspan="5">... and ${trades.length - 20} more trades</td></tr>` : ''}
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="3"><strong>Total:</strong></td>
+                        <td colspan="3"><strong>Total (${trades.length} trades):</strong></td>
                         <td class="${totalPL >= 0 ? 'positive' : 'negative'}"><strong>${this.formatCurrency(totalPL)}</strong></td>
                         <td><strong>${trades.filter(t => (t.net_pl || 0) >= 0).length}W / ${trades.filter(t => (t.net_pl || 0) < 0).length}L</strong></td>
                     </tr>
@@ -412,7 +439,6 @@ class TradingJournal {
     async commitImport() {
         if (!this.previewData || this.previewData.length === 0) {
             this.showMessage('error', 'No data to import', 'import-message');
-            console.log('❌ No preview data');
             return;
         }
         
@@ -423,7 +449,7 @@ class TradingJournal {
             console.log('Import mode:', mode);
             
             if (mode === 'replace') {
-                if (!confirm('This will delete all existing trades. Continue?')) return;
+                if (!confirm(`This will delete all existing trades and import ${this.previewData.length} new trades. Continue?`)) return;
                 await this.db.clear('trades');
                 this.trades = [];
                 console.log('✅ Cleared existing trades');
@@ -474,8 +500,6 @@ class TradingJournal {
     }
 
     showTab(tabName) {
-        console.log('Showing tab:', tabName);
-        
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
@@ -507,6 +531,7 @@ class TradingJournal {
         this.calculatePortfolioMetrics();
         this.displayMetrics();
         this.displayPortfolioMetrics();
+        await this.updateCharts();
         console.log('✅ Dashboard updated');
     }
 
@@ -608,6 +633,358 @@ class TradingJournal {
                         this.portfolioMetrics.totalReturn >= 0 : 
                         this.portfolioMetrics.currentBalance >= this.portfolioMetrics.startingCapital;
                     element.style.color = isPositive ? '#00ff88' : '#ff4444';
+                }
+            }
+        });
+    }
+
+    // ADDED: Chart creation methods
+    async updateCharts() {
+        if (typeof Chart === 'undefined') {
+            console.log('⚠️ Chart.js not available, skipping charts');
+            return;
+        }
+        
+        console.log('📊 Creating charts...');
+        
+        try {
+            this.createPLChart();
+            this.createPortfolioBalanceChart();
+            this.createStrategyChart();
+            this.createTopTickersChart();
+            this.createMonthlyPLChart();
+            console.log('✅ All charts created');
+        } catch (error) {
+            console.error('❌ Error creating charts:', error);
+        }
+    }
+
+    createPLChart() {
+        const ctx = document.getElementById('pl-over-time');
+        if (!ctx) return;
+        
+        if (this.charts.plOverTime) {
+            this.charts.plOverTime.destroy();
+        }
+        
+        if (this.filteredTrades.length === 0) {
+            ctx.parentElement.innerHTML = '<p style="text-align: center; color: #999;">No data yet</p>';
+            return;
+        }
+        
+        const sortedTrades = [...this.filteredTrades].sort((a, b) => new Date(a.date) - new Date(b.date));
+        let cumulative = 0;
+        const data = sortedTrades.map(trade => {
+            cumulative += trade.net_pl || 0;
+            return {
+                x: new Date(trade.date),
+                y: cumulative
+            };
+        });
+        
+        this.charts.plOverTime = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Cumulative P&L',
+                    data: data,
+                    borderColor: '#00ff88',
+                    backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day'
+                        },
+                        grid: { color: '#333' },
+                        ticks: { color: '#ccc' }
+                    },
+                    y: {
+                        grid: { color: '#333' },
+                        ticks: { 
+                            color: '#ccc',
+                            callback: (value) => this.formatCurrency(value)
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#fff' } },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => 'P&L: ' + this.formatCurrency(context.parsed.y)
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    createPortfolioBalanceChart() {
+        const ctx = document.getElementById('portfolio-balance');
+        if (!ctx) return;
+        
+        if (this.charts.portfolioBalance) {
+            this.charts.portfolioBalance.destroy();
+        }
+        
+        if (this.filteredTrades.length === 0) {
+            ctx.parentElement.innerHTML = '<p style="text-align: center; color: #999;">No data yet</p>';
+            return;
+        }
+        
+        const sortedTrades = [...this.filteredTrades].sort((a, b) => new Date(a.date) - new Date(b.date));
+        let balance = this.startingCapital;
+        const data = [{
+            x: sortedTrades[0] ? new Date(sortedTrades[0].date) : new Date(),
+            y: this.startingCapital
+        }];
+        
+        sortedTrades.forEach(trade => {
+            balance += trade.net_pl || 0;
+            data.push({
+                x: new Date(trade.date),
+                y: balance
+            });
+        });
+        
+        this.charts.portfolioBalance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: 'Portfolio Balance',
+                        data: data,
+                        borderColor: '#00aaff',
+                        backgroundColor: 'rgba(0, 170, 255, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Starting Capital',
+                        data: data.map(d => ({ x: d.x, y: this.startingCapital })),
+                        borderColor: '#666',
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: { unit: 'day' },
+                        grid: { color: '#333' },
+                        ticks: { color: '#ccc' }
+                    },
+                    y: {
+                        grid: { color: '#333' },
+                        ticks: { 
+                            color: '#ccc',
+                            callback: (value) => this.formatCurrency(value)
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#fff' } },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => context.dataset.label + ': ' + this.formatCurrency(context.parsed.y)
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    createStrategyChart() {
+        const ctx = document.getElementById('strategy-performance');
+        if (!ctx) return;
+        
+        if (this.charts.strategyPerformance) {
+            this.charts.strategyPerformance.destroy();
+        }
+        
+        if (this.filteredTrades.length === 0) return;
+        
+        const strategyData = {};
+        this.filteredTrades.forEach(trade => {
+            const strategy = trade.strategy || 'Unknown';
+            if (!strategyData[strategy]) {
+                strategyData[strategy] = 0;
+            }
+            strategyData[strategy] += trade.net_pl || 0;
+        });
+        
+        const labels = Object.keys(strategyData);
+        const data = Object.values(strategyData);
+        const colors = data.map(val => val >= 0 ? '#00ff88' : '#ff4444');
+        
+        this.charts.strategyPerformance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'P&L by Strategy',
+                    data: data,
+                    backgroundColor: colors
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { color: '#333' },
+                        ticks: { color: '#ccc' }
+                    },
+                    y: {
+                        grid: { color: '#333' },
+                        ticks: { 
+                            color: '#ccc',
+                            callback: (value) => this.formatCurrency(value)
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => 'P&L: ' + this.formatCurrency(context.parsed.y)
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    createTopTickersChart() {
+        const ctx = document.getElementById('top-tickers');
+        if (!ctx) return;
+        
+        if (this.charts.topTickers) {
+            this.charts.topTickers.destroy();
+        }
+        
+        if (this.filteredTrades.length === 0) return;
+        
+        const tickerData = {};
+        this.filteredTrades.forEach(trade => {
+            const ticker = trade.ticker || 'Unknown';
+            if (!tickerData[ticker]) {
+                tickerData[ticker] = 0;
+            }
+            tickerData[ticker] += trade.net_pl || 0;
+        });
+        
+        const sorted = Object.entries(tickerData)
+            .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+            .slice(0, 10);
+        
+        const labels = sorted.map(([ticker]) => ticker);
+        const data = sorted.map(([, pl]) => pl);
+        
+        this.charts.topTickers = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data.map(Math.abs),
+                    backgroundColor: [
+                        '#00ff88', '#00aaff', '#ff4444', '#ffaa00',
+                        '#ff00ff', '#00ffff', '#ff8800', '#8800ff',
+                        '#00ff00', '#ff0088'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { 
+                        position: 'right',
+                        labels: { color: '#fff' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const label = context.label;
+                                const value = data[context.dataIndex];
+                                return label + ': ' + this.formatCurrency(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    createMonthlyPLChart() {
+        const ctx = document.getElementById('monthly-pl');
+        if (!ctx) return;
+        
+        if (this.charts.monthlyPL) {
+            this.charts.monthlyPL.destroy();
+        }
+        
+        if (this.filteredTrades.length === 0) return;
+        
+        const monthlyData = {};
+        this.filteredTrades.forEach(trade => {
+            const date = new Date(trade.date);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            if (!monthlyData[monthKey]) {
+                monthlyData[monthKey] = 0;
+            }
+            monthlyData[monthKey] += trade.net_pl || 0;
+        });
+        
+        const labels = Object.keys(monthlyData).sort();
+        const data = labels.map(month => monthlyData[month]);
+        const colors = data.map(val => val >= 0 ? '#00ff88' : '#ff4444');
+        
+        this.charts.monthlyPL = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Monthly P&L',
+                    data: data,
+                    backgroundColor: colors
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { color: '#333' },
+                        ticks: { color: '#ccc' }
+                    },
+                    y: {
+                        grid: { color: '#333' },
+                        ticks: { 
+                            color: '#ccc',
+                            callback: (value) => this.formatCurrency(value)
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => 'P&L: ' + this.formatCurrency(context.parsed.y)
+                        }
+                    }
                 }
             }
         });
@@ -725,4 +1102,4 @@ window.debugApp = function() {
     }
 };
 
-console.log('✅ app.js loaded successfully');
+console.log('✅ app.js v2.1 loaded successfully');
