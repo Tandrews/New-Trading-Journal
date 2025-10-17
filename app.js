@@ -751,6 +751,85 @@ async viewTradeDetails(id) {
             this.showMessage('error', 'Import failed', 'import-message');
         }
     }
+// =============================================================================
+// FEATURE 1: EXPORT TO CSV
+// =============================================================================
+// Add these functions to your TradingJournal class in app.js
+// Place them after the commitImport() function
+// =============================================================================
+
+    // Export trades to CSV
+    exportToCSV() {
+        console.log('📥 Exporting trades to CSV...');
+        
+        if (this.trades.length === 0) {
+            this.showMessage('error', 'No trades to export');
+            return;
+        }
+        
+        try {
+            // CSV Headers
+            const headers = [
+                'Date', 'Ticker', 'Strategy', 'Option Type', 'Strike', 'Expiration',
+                'Quantity', 'Entry Price', 'Exit Price', 'Premium', 'Fees', 'Net P&L',
+                'Outcome', 'Delta', 'Gamma', 'Theta', 'Vega', 
+                'Trade Notes', 'Post-Trade Analysis', 'Created At'
+            ];
+            
+            // Build CSV content
+            let csvContent = headers.join(',') + '\n';
+            
+            this.trades.forEach(trade => {
+                const row = [
+                    trade.date || '',
+                    trade.ticker || '',
+                    trade.strategy || '',
+                    trade.option_type || '',
+                    trade.strike || '',
+                    trade.expiration || '',
+                    trade.quantity || '',
+                    trade.entry_price || '',
+                    trade.exit_price || '',
+                    trade.premium || 0,
+                    trade.fees || 0,
+                    trade.net_pl || 0,
+                    trade.outcome || '',
+                    trade.delta || '',
+                    trade.gamma || '',
+                    trade.theta || '',
+                    trade.vega || '',
+                    `"${(trade.trade_notes || '').replace(/"/g, '""')}"`, // Escape quotes
+                    `"${(trade.post_trade_analysis || '').replace(/"/g, '""')}"`, // Escape quotes
+                    trade.created_at || ''
+                ];
+                csvContent += row.join(',') + '\n';
+            });
+            
+            // Create download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            const timestamp = new Date().toISOString().split('T')[0];
+            const filename = `trading-journal-${timestamp}.csv`;
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            this.showMessage('success', `Exported ${this.trades.length} trades to ${filename}`);
+            console.log(`✅ Exported ${this.trades.length} trades`);
+            
+        } catch (error) {
+            console.error('❌ Export failed:', error);
+            this.showMessage('error', 'Export failed: ' + error.message);
+        }
+    }
+
 
     // ============================================================================
     // NAVIGATION & UI
