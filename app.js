@@ -1456,5 +1456,13 @@ window.debugApp = function() {
         });
     }
 };
+// Global function for View Details modal
+window.closeViewModal = function() {
+    if (window.app) {
+        window.app.closeViewModal();
+    }
+};
+
+console.log('✅ View modal close function added');
 
 console.log('✅ app.js v2.4 loaded - Complete with View Details');
