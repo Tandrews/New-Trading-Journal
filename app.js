@@ -1,17 +1,18 @@
 // =============================================================================
-// COMPLETE Trading Journal app.js v2.3 - FINAL PRODUCTION VERSION
+// COMPLETE Trading Journal app.js v2.4 - WITH VIEW DETAILS
 // =============================================================================
 // ✅ Proper CSV parsing - imports all 112 trades
 // ✅ Portfolio tracking with auto-updates
 // ✅ All 5 interactive charts
 // ✅ Trade History table with filters
-// ✅ ADD TRADE functionality ← NEW
-// ✅ EDIT TRADE functionality ← NEW
+// ✅ ADD TRADE functionality
+// ✅ EDIT TRADE functionality
+// ✅ VIEW DETAILS modal ← NEW!
 // ✅ Delete trades functionality
 // ✅ Comprehensive error logging
 // =============================================================================
 
-console.log('🚀 Loading Trading Journal v2.3 - Final Complete Edition...');
+console.log('🚀 Loading Trading Journal v2.4 - With View Details...');
 
 class TradingJournal {
     constructor() {
@@ -25,9 +26,8 @@ class TradingJournal {
         this.previewData = null;
         this.charts = {};
         this.metrics = {};
-        this.currentEditId = null; // For edit modal
+        this.currentEditId = null;
         
-        // Portfolio properties
         this.startingCapital = 0;
         this.currentBalance = 0;
         this.portfolioHistory = [];
@@ -75,7 +75,6 @@ class TradingJournal {
                     console.log(`📊 Upgrading database from v${oldVersion} to v${newVersion}`);
                     
                     if (!db.objectStoreNames.contains('trades')) {
-                        console.log('Creating trades store...');
                         const tradesStore = db.createObjectStore('trades', {
                             keyPath: 'id',
                             autoIncrement: true
@@ -83,31 +82,23 @@ class TradingJournal {
                         tradesStore.createIndex('date', 'date');
                         tradesStore.createIndex('ticker', 'ticker');
                         tradesStore.createIndex('strategy', 'strategy');
-                        console.log('✅ Trades store created');
                     }
                     
                     if (!db.objectStoreNames.contains('portfolioSettings')) {
-                        console.log('Creating portfolioSettings store...');
                         db.createObjectStore('portfolioSettings', { keyPath: 'id' });
-                        console.log('✅ Portfolio settings store created');
                     }
                     
                     if (!db.objectStoreNames.contains('portfolioHistory')) {
-                        console.log('Creating portfolioHistory store...');
                         const historyStore = db.createObjectStore('portfolioHistory', {
                             keyPath: 'id',
                             autoIncrement: true
                         });
                         historyStore.createIndex('date', 'date');
-                        console.log('✅ Portfolio history store created');
                     }
-                    
-                    console.log('✅ Database upgrade complete');
                 }
             });
             
             console.log('✅ Database opened successfully');
-            console.log('📊 Store names:', Array.from(this.db.objectStoreNames));
             
         } catch (error) {
             console.error('❌ Database initialization failed:', error);
@@ -117,14 +108,10 @@ class TradingJournal {
 
     async loadAllData() {
         try {
-            console.log('📥 Loading all data...');
-            
             this.trades = await this.db.getAll('trades') || [];
             this.trades.sort((a, b) => new Date(b.date) - new Date(a.date));
             this.filteredTrades = [...this.trades];
-            
             console.log(`✅ Loaded ${this.trades.length} trades`);
-            
         } catch (error) {
             console.error('❌ Error loading data:', error);
             this.trades = [];
@@ -134,21 +121,13 @@ class TradingJournal {
 
     async loadPortfolioSettings() {
         try {
-            console.log('💼 Loading portfolio settings...');
-            
             const settings = await this.db.get('portfolioSettings', 'main');
             if (settings) {
                 this.startingCapital = settings.startingCapital || 0;
                 this.currentBalance = settings.currentBalance || 0;
-                console.log(`✅ Portfolio loaded: Capital=${this.startingCapital}, Balance=${this.currentBalance}`);
-            } else {
-                console.log('ℹ️ No portfolio settings found');
             }
-            
             this.portfolioHistory = await this.db.getAll('portfolioHistory') || [];
             this.portfolioHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
-            console.log(`✅ Loaded ${this.portfolioHistory.length} portfolio history entries`);
-            
         } catch (error) {
             console.error('❌ Error loading portfolio:', error);
         }
@@ -156,19 +135,14 @@ class TradingJournal {
 
     async savePortfolioSettings() {
         try {
-            console.log('💾 Saving portfolio settings...');
-            
             const settings = {
                 id: 'main',
                 startingCapital: this.startingCapital,
                 currentBalance: this.currentBalance,
                 lastUpdated: new Date().toISOString()
             };
-            
             await this.db.put('portfolioSettings', settings);
-            console.log('✅ Portfolio settings saved:', settings);
             return true;
-            
         } catch (error) {
             console.error('❌ Error saving portfolio settings:', error);
             return false;
@@ -179,95 +153,45 @@ class TradingJournal {
         console.log('🎯 Setting up event listeners...');
         
         try {
-            // Tab navigation
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const tabName = e.target.dataset.tab;
-                    console.log('📑 Switching to tab:', tabName);
-                    this.showTab(tabName);
+                    this.showTab(e.target.dataset.tab);
                 });
             });
-            console.log('✅ Tab listeners attached');
             
-            // Add Trade Form
             const addTradeForm = document.getElementById('add-trade-form');
             if (addTradeForm) {
-                addTradeForm.addEventListener('submit', (e) => {
-                    console.log('➕ Add trade form submitted');
-                    this.handleAddTrade(e);
-                });
-                console.log('✅ Add trade form listener attached');
+                addTradeForm.addEventListener('submit', (e) => this.handleAddTrade(e));
             }
             
-            // Edit Trade Form
             const editTradeForm = document.getElementById('edit-trade-form');
             if (editTradeForm) {
-                editTradeForm.addEventListener('submit', (e) => {
-                    console.log('✏️ Edit trade form submitted');
-                    this.handleEditTrade(e);
-                });
-                console.log('✅ Edit trade form listener attached');
+                editTradeForm.addEventListener('submit', (e) => this.handleEditTrade(e));
             }
             
-            // Portfolio settings form
             const portfolioForm = document.getElementById('portfolio-settings-form');
             if (portfolioForm) {
-                portfolioForm.addEventListener('submit', (e) => {
-                    console.log('💼 Portfolio form submitted');
-                    this.handlePortfolioSettings(e);
-                });
-                console.log('✅ Portfolio form listener attached');
+                portfolioForm.addEventListener('submit', (e) => this.handlePortfolioSettings(e));
             }
             
-            // CSV file upload
             const fileUpload = document.getElementById('csv-file');
             if (fileUpload) {
-                fileUpload.addEventListener('change', (e) => {
-                    console.log('📄 CSV file selected');
-                    this.handleFileUpload(e);
-                });
-                console.log('✅ File upload listener attached');
+                fileUpload.addEventListener('change', (e) => this.handleFileUpload(e));
             }
             
-            // Commit import button
             const commitBtn = document.getElementById('commit-import');
             if (commitBtn) {
-                commitBtn.addEventListener('click', () => {
-                    console.log('💾 Commit import clicked');
-                    this.commitImport();
-                });
-                console.log('✅ Commit button listener attached');
+                commitBtn.addEventListener('click', () => this.commitImport());
             }
             
-            // Filters
-            const filterTicker = document.getElementById('filter-ticker');
-            if (filterTicker) {
-                filterTicker.addEventListener('change', () => this.applyFilters());
-                console.log('✅ Ticker filter listener attached');
-            }
-
-            const filterStrategy = document.getElementById('filter-strategy');
-            if (filterStrategy) {
-                filterStrategy.addEventListener('change', () => this.applyFilters());
-                console.log('✅ Strategy filter listener attached');
-            }
-
-            const filterDateFrom = document.getElementById('filter-date-from');
-            if (filterDateFrom) {
-                filterDateFrom.addEventListener('change', () => this.applyFilters());
-                console.log('✅ Date from filter listener attached');
-            }
-
-            const filterDateTo = document.getElementById('filter-date-to');
-            if (filterDateTo) {
-                filterDateTo.addEventListener('change', () => this.applyFilters());
-                console.log('✅ Date to filter listener attached');
-            }
+            ['filter-ticker', 'filter-strategy', 'filter-date-from', 'filter-date-to'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('change', () => this.applyFilters());
+            });
 
             const resetFilters = document.getElementById('reset-filters');
             if (resetFilters) {
                 resetFilters.addEventListener('click', () => this.resetFilters());
-                console.log('✅ Reset filters listener attached');
             }
             
             console.log('✅ All event listeners set up');
@@ -278,7 +202,151 @@ class TradingJournal {
     }
 
     // ============================================================================
-    // ADD TRADE FUNCTIONALITY
+    // VIEW DETAILS FUNCTIONALITY (NEW!)
+    // ============================================================================
+    
+    async viewTradeDetails(id) {
+        console.log('👁️ Opening view details modal for trade:', id);
+        
+        try {
+            const trade = await this.db.get('trades', id);
+            if (!trade) {
+                this.showMessage('error', 'Trade not found');
+                return;
+            }
+            
+            console.log('Trade details:', trade);
+            
+            // Populate the view details modal
+            const content = `
+                <div class="trade-details-grid">
+                    <div class="detail-section">
+                        <h3>📊 Basic Information</h3>
+                        <div class="detail-item">
+                            <span class="detail-label">Date:</span>
+                            <span class="detail-value">${new Date(trade.date).toLocaleDateString()}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Ticker:</span>
+                            <span class="detail-value">${trade.ticker || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Strategy:</span>
+                            <span class="detail-value">${trade.strategy || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Option Type:</span>
+                            <span class="detail-value">${trade.option_type || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Strike:</span>
+                            <span class="detail-value">${trade.strike || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Expiration:</span>
+                            <span class="detail-value">${trade.expiration ? new Date(trade.expiration).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Quantity:</span>
+                            <span class="detail-value">${trade.quantity || 'N/A'}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>💰 Pricing & P&L</h3>
+                        <div class="detail-item">
+                            <span class="detail-label">Entry Price:</span>
+                            <span class="detail-value">${trade.entry_price ? this.formatCurrency(trade.entry_price) : 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Exit Price:</span>
+                            <span class="detail-value">${trade.exit_price ? this.formatCurrency(trade.exit_price) : 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Premium:</span>
+                            <span class="detail-value">${this.formatCurrency(trade.premium || 0)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Fees:</span>
+                            <span class="detail-value">${this.formatCurrency(trade.fees || 0)}</span>
+                        </div>
+                        <div class="detail-item highlight">
+                            <span class="detail-label"><strong>Net P&L:</strong></span>
+                            <span class="detail-value ${(trade.net_pl || 0) >= 0 ? 'positive' : 'negative'}">
+                                <strong>${this.formatCurrency(trade.net_pl || 0)}</strong>
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Outcome:</span>
+                            <span class="detail-value outcome-${(trade.outcome || 'loss').toLowerCase()}">
+                                ${trade.outcome || 'Loss'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>📈 Greeks</h3>
+                        <div class="detail-item">
+                            <span class="detail-label">Delta (Δ):</span>
+                            <span class="detail-value">${trade.delta !== null && trade.delta !== undefined ? trade.delta.toFixed(4) : 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Gamma (Γ):</span>
+                            <span class="detail-value">${trade.gamma !== null && trade.gamma !== undefined ? trade.gamma.toFixed(4) : 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Theta (Θ):</span>
+                            <span class="detail-value">${trade.theta !== null && trade.theta !== undefined ? trade.theta.toFixed(4) : 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Vega (ν):</span>
+                            <span class="detail-value">${trade.vega !== null && trade.vega !== undefined ? trade.vega.toFixed(4) : 'N/A'}</span>
+                        </div>
+                    </div>
+
+                    ${trade.trade_notes ? `
+                    <div class="detail-section notes-section">
+                        <h3>📝 Trade Notes</h3>
+                        <div class="trade-notes-display">
+                            ${trade.trade_notes}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="detail-section">
+                        <h3>🕐 Timestamps</h3>
+                        <div class="detail-item">
+                            <span class="detail-label">Created:</span>
+                            <span class="detail-value">${trade.created_at ? new Date(trade.created_at).toLocaleString() : 'N/A'}</span>
+                        </div>
+                        ${trade.updated_at ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Last Updated:</span>
+                            <span class="detail-value">${new Date(trade.updated_at).toLocaleString()}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('view-details-content').innerHTML = content;
+            document.getElementById('view-trade-modal').style.display = 'flex';
+            
+            console.log('✅ View details modal opened');
+            
+        } catch (error) {
+            console.error('❌ Error loading trade details:', error);
+            this.showMessage('error', 'Failed to load trade details');
+        }
+    }
+    
+    closeViewModal() {
+        console.log('❌ Closing view details modal');
+        document.getElementById('view-trade-modal').style.display = 'none';
+    }
+
+    // ============================================================================
+    // ADD TRADE
     // ============================================================================
     
     async handleAddTrade(e) {
@@ -288,7 +356,6 @@ class TradingJournal {
         try {
             const formData = new FormData(e.target);
             
-            // Create trade object
             const trade = {
                 date: formData.get('trade-date'),
                 ticker: formData.get('ticker')?.toUpperCase(),
@@ -309,70 +376,54 @@ class TradingJournal {
                 created_at: new Date().toISOString()
             };
             
-            // Calculate net P&L
             trade.net_pl = trade.premium + trade.fees;
             trade.outcome = trade.net_pl >= 0 ? 'Win' : 'Loss';
             
-            console.log('Trade data:', trade);
-            
-            // Validate required fields
             if (!trade.date || !trade.ticker || !trade.strategy) {
-                this.showMessage('error', 'Please fill in all required fields (Date, Ticker, Strategy)');
+                this.showMessage('error', 'Please fill in all required fields');
                 return;
             }
             
-            // Save to database
             const id = await this.db.add('trades', trade);
             trade.id = id;
-            console.log('✅ Trade saved with ID:', id);
             
-            // Update local trades array
             this.trades.unshift(trade);
             this.filteredTrades = [...this.trades];
             
-            // Update portfolio
             this.currentBalance += trade.net_pl;
             await this.savePortfolioSettings();
-            console.log('💰 Portfolio updated:', this.formatCurrency(this.currentBalance));
             
-            // Update UI
             this.populateFilterDropdowns();
             await this.updateDashboard();
             if (this.currentTab === 'history') {
                 this.updateTradeHistory();
             }
             
-            // Clear form and show success
             e.target.reset();
-            this.showMessage('success', `Trade added successfully! P&L: ${this.formatCurrency(trade.net_pl)}. Portfolio updated.`);
+            this.showMessage('success', `Trade added! P&L: ${this.formatCurrency(trade.net_pl)}`);
             
         } catch (error) {
             console.error('❌ Error adding trade:', error);
-            this.showMessage('error', 'Failed to add trade: ' + error.message);
+            this.showMessage('error', 'Failed to add trade');
         }
     }
 
     // ============================================================================
-    // EDIT TRADE FUNCTIONALITY
+    // EDIT TRADE
     // ============================================================================
     
     async editTrade(id) {
         console.log('✏️ Opening edit modal for trade:', id);
         
         try {
-            // Get trade from database
             const trade = await this.db.get('trades', id);
             if (!trade) {
                 this.showMessage('error', 'Trade not found');
                 return;
             }
             
-            console.log('Trade to edit:', trade);
-            
-            // Store current edit ID
             this.currentEditId = id;
             
-            // Populate form fields
             document.getElementById('edit-trade-id').value = id;
             document.getElementById('edit-trade-date').value = trade.date || '';
             document.getElementById('edit-ticker').value = trade.ticker || '';
@@ -391,45 +442,30 @@ class TradingJournal {
             document.getElementById('edit-vega').value = trade.vega || '';
             document.getElementById('edit-trade-notes').value = trade.trade_notes || '';
             
-            // Open modal
             this.openEditModal();
-            console.log('✅ Edit modal opened');
             
         } catch (error) {
             console.error('❌ Error loading trade for edit:', error);
-            this.showMessage('error', 'Failed to load trade for editing');
+            this.showMessage('error', 'Failed to load trade');
         }
     }
     
     openEditModal() {
-        const modal = document.getElementById('edit-trade-modal');
-        if (modal) {
-            modal.style.display = 'flex';
-        }
+        document.getElementById('edit-trade-modal').style.display = 'flex';
     }
     
     closeEditModal() {
-        console.log('❌ Closing edit modal');
-        const modal = document.getElementById('edit-trade-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
+        document.getElementById('edit-trade-modal').style.display = 'none';
         this.currentEditId = null;
     }
     
     async handleEditTrade(e) {
         e.preventDefault();
-        console.log('💾 Saving edited trade...');
         
         try {
             const id = parseInt(document.getElementById('edit-trade-id').value);
-            
-            // Get original trade for portfolio adjustment
             const originalTrade = await this.db.get('trades', id);
             const originalPL = originalTrade ? (originalTrade.net_pl || 0) : 0;
-            
-            // Get form data
-            const formData = new FormData(e.target);
             
             const updatedTrade = {
                 id: id,
@@ -453,44 +489,30 @@ class TradingJournal {
                 created_at: originalTrade.created_at
             };
             
-            // Calculate new P&L
             updatedTrade.net_pl = updatedTrade.premium + updatedTrade.fees;
             updatedTrade.outcome = updatedTrade.net_pl >= 0 ? 'Win' : 'Loss';
             
-            console.log('Updated trade:', updatedTrade);
-            
-            // Save to database
             await this.db.put('trades', updatedTrade);
-            console.log('✅ Trade updated in database');
             
-            // Adjust portfolio (remove old P&L, add new P&L)
             const plDifference = updatedTrade.net_pl - originalPL;
             this.currentBalance += plDifference;
             await this.savePortfolioSettings();
-            console.log('💰 Portfolio adjusted by:', this.formatCurrency(plDifference));
             
-            // Update local arrays
             const index = this.trades.findIndex(t => t.id === id);
-            if (index !== -1) {
-                this.trades[index] = updatedTrade;
-            }
+            if (index !== -1) this.trades[index] = updatedTrade;
             const filteredIndex = this.filteredTrades.findIndex(t => t.id === id);
-            if (filteredIndex !== -1) {
-                this.filteredTrades[filteredIndex] = updatedTrade;
-            }
+            if (filteredIndex !== -1) this.filteredTrades[filteredIndex] = updatedTrade;
             
-            // Update UI
             this.closeEditModal();
             this.populateFilterDropdowns();
             this.updateTradeHistory();
             await this.updateDashboard();
             
-            this.showMessage('success', `Trade updated successfully! Portfolio adjusted by ${this.formatCurrency(plDifference)}`);
-            console.log('✅ Trade edit complete');
+            this.showMessage('success', `Trade updated! Portfolio adjusted by ${this.formatCurrency(plDifference)}`);
             
         } catch (error) {
             console.error('❌ Error updating trade:', error);
-            this.showMessage('error', 'Failed to update trade: ' + error.message);
+            this.showMessage('error', 'Failed to update trade');
         }
     }
 
@@ -500,18 +522,11 @@ class TradingJournal {
 
     async handlePortfolioSettings(e) {
         e.preventDefault();
-        console.log('💼 Processing portfolio settings...');
         
         try {
             const formData = new FormData(e.target);
-            
             const newStartingCapital = parseFloat(formData.get('starting-capital')) || 0;
             const newCurrentBalance = parseFloat(formData.get('current-balance')) || 0;
-            
-            console.log('Input values:', {
-                startingCapital: newStartingCapital,
-                currentBalance: newCurrentBalance
-            });
             
             if (newStartingCapital === 0) {
                 this.showMessage('error', 'Please enter a starting capital amount');
@@ -526,10 +541,7 @@ class TradingJournal {
             if (saved) {
                 await this.updateDashboard();
                 this.closePortfolioModal();
-                this.showMessage('success', `Portfolio settings saved! Capital: ${this.formatCurrency(newStartingCapital)}, Balance: ${this.formatCurrency(newCurrentBalance)}`);
-                console.log('✅ Portfolio settings saved successfully');
-            } else {
-                this.showMessage('error', 'Failed to save portfolio settings');
+                this.showMessage('success', `Portfolio settings saved!`);
             }
             
         } catch (error) {
@@ -539,21 +551,17 @@ class TradingJournal {
     }
 
     // ============================================================================
-    // CSV IMPORT
+    // CSV IMPORT (keeping from v2.3 - no changes)
     // ============================================================================
 
     handleFileUpload(e) {
         const file = e.target.files[0];
         if (!file) return;
         
-        console.log('📄 Reading file:', file.name);
-        
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
-                const csvContent = event.target.result;
-                console.log('📄 File read, length:', csvContent.length);
-                this.parseCSV(csvContent);
+                this.parseCSV(event.target.result);
             } catch (error) {
                 console.error('❌ Error reading file:', error);
                 this.showMessage('error', 'Error reading file');
@@ -569,7 +577,6 @@ class TradingJournal {
         
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
-            
             if (char === '"') {
                 inQuotes = !inQuotes;
             } else if (char === ',' && !inQuotes) {
@@ -579,15 +586,12 @@ class TradingJournal {
                 current += char;
             }
         }
-        
         result.push(current.trim());
         return result;
     }
 
     parseCSV(csvContent) {
         try {
-            console.log('📊 Parsing CSV with proper quoted field handling...');
-            
             const lines = csvContent.split('\n').map(line => line.trim()).filter(line => line);
             if (lines.length < 2) {
                 this.showMessage('error', 'CSV file must have header and data rows');
@@ -595,8 +599,6 @@ class TradingJournal {
             }
             
             const headers = this.parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, '_'));
-            console.log('📋 Headers found:', headers.length);
-            
             const trades = [];
             let skipped = 0;
             
@@ -614,12 +616,7 @@ class TradingJournal {
                     trade[header] = values[index] || '';
                 });
                 
-                if (!trade.date || trade.date === '') {
-                    skipped++;
-                    continue;
-                }
-                
-                if (!trade.ticker || trade.ticker === '') {
+                if (!trade.date || !trade.ticker) {
                     skipped++;
                     continue;
                 }
@@ -639,10 +636,10 @@ class TradingJournal {
                 trades.push(trade);
             }
             
-            console.log(`✅ Parsed ${trades.length} trades (skipped ${skipped} invalid rows)`);
+            console.log(`✅ Parsed ${trades.length} trades (skipped ${skipped})`);
             
             if (trades.length === 0) {
-                this.showMessage('error', 'No valid trades found in CSV');
+                this.showMessage('error', 'No valid trades found');
                 return;
             }
             
@@ -652,20 +649,15 @@ class TradingJournal {
             
         } catch (error) {
             console.error('❌ Error parsing CSV:', error);
-            this.showMessage('error', 'Error parsing CSV: ' + error.message);
+            this.showMessage('error', 'Error parsing CSV');
         }
     }
 
     displayPreview(trades) {
-        console.log('📊 Displaying preview...');
-        
         const previewSection = document.getElementById('preview-section');
         const previewTable = document.getElementById('preview-table');
         
-        if (!previewSection || !previewTable) {
-            console.error('❌ Preview elements not found');
-            return;
-        }
+        if (!previewSection || !previewTable) return;
         
         const totalPL = trades.reduce((sum, trade) => sum + (trade.net_pl || 0), 0);
         
@@ -692,7 +684,7 @@ class TradingJournal {
                             <td class="outcome-${(trade.outcome || 'loss').toLowerCase()}">${trade.outcome || 'Loss'}</td>
                         </tr>
                     `).join('')}
-                    ${trades.length > 20 ? `<tr><td colspan="5">... and ${trades.length - 20} more trades</td></tr>` : ''}
+                    ${trades.length > 20 ? `<tr><td colspan="5">... and ${trades.length - 20} more</td></tr>` : ''}
                 </tbody>
                 <tfoot>
                     <tr>
@@ -706,8 +698,6 @@ class TradingJournal {
         
         previewTable.innerHTML = tableHTML;
         previewSection.style.display = 'block';
-        
-        console.log('✅ Preview displayed');
     }
 
     async commitImport() {
@@ -716,17 +706,13 @@ class TradingJournal {
             return;
         }
         
-        console.log(`💾 Committing ${this.previewData.length} trades...`);
-        
         try {
             const mode = document.querySelector('input[name="import-mode"]:checked')?.value || 'append';
-            console.log('Import mode:', mode);
             
             if (mode === 'replace') {
-                if (!confirm(`This will delete all existing trades and import ${this.previewData.length} new trades. Continue?`)) return;
+                if (!confirm(`Delete all trades and import ${this.previewData.length} new ones?`)) return;
                 await this.db.clear('trades');
                 this.trades = [];
-                console.log('✅ Cleared existing trades');
             }
             
             let successCount = 0;
@@ -744,9 +730,6 @@ class TradingJournal {
                 }
             }
             
-            console.log(`✅ Successfully added ${successCount} trades`);
-            console.log(`💰 Total P&L: ${this.formatCurrency(totalPL)}`);
-            
             this.currentBalance += totalPL;
             await this.savePortfolioSettings();
             
@@ -761,13 +744,12 @@ class TradingJournal {
                 previewStatus.style.color = '#00ff88';
             }
             
-            this.showMessage('success', `✅ Successfully imported ${successCount} trades! P&L: ${this.formatCurrency(totalPL)}`, 'import-message');
-            
+            this.showMessage('success', `✅ Imported ${successCount} trades! P&L: ${this.formatCurrency(totalPL)}`, 'import-message');
             this.previewData = null;
             
         } catch (error) {
             console.error('❌ Import failed:', error);
-            this.showMessage('error', 'Import failed: ' + error.message, 'import-message');
+            this.showMessage('error', 'Import failed', 'import-message');
         }
     }
 
@@ -779,20 +761,15 @@ class TradingJournal {
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
-        
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.remove('active');
         });
         
         const selectedContent = document.getElementById(`${tabName}-tab`);
-        if (selectedContent) {
-            selectedContent.classList.add('active');
-        }
+        if (selectedContent) selectedContent.classList.add('active');
         
         const selectedBtn = document.querySelector(`[data-tab="${tabName}"]`);
-        if (selectedBtn) {
-            selectedBtn.classList.add('active');
-        }
+        if (selectedBtn) selectedBtn.classList.add('active');
         
         this.currentTab = tabName;
         
@@ -805,13 +782,11 @@ class TradingJournal {
     }
 
     async updateDashboard() {
-        console.log('📊 Updating dashboard...');
         this.calculateMetrics();
         this.calculatePortfolioMetrics();
         this.displayMetrics();
         this.displayPortfolioMetrics();
         await this.updateCharts();
-        console.log('✅ Dashboard updated');
     }
 
     calculateMetrics() {
@@ -884,9 +859,7 @@ class TradingJournal {
         
         Object.entries(elements).forEach(([id, value]) => {
             const element = document.getElementById(id);
-            if (element) {
-                element.textContent = value;
-            }
+            if (element) element.textContent = value;
         });
     }
 
@@ -906,7 +879,6 @@ class TradingJournal {
             const element = document.getElementById(id);
             if (element) {
                 element.textContent = value;
-                
                 if (id.includes('return') || id.includes('balance')) {
                     const isPositive = id.includes('return') ? 
                         this.portfolioMetrics.totalReturn >= 0 : 
@@ -922,23 +894,15 @@ class TradingJournal {
     // ============================================================================
 
     updateTradeHistory() {
-        console.log('📋 Updating Trade History...');
-        
         const tbody = document.querySelector('#trades-table tbody');
-        if (!tbody) {
-            console.error('❌ Trade History table not found');
-            return;
-        }
+        if (!tbody) return;
         
         tbody.innerHTML = '';
         
         if (this.filteredTrades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; color: #999; padding: 2rem;">No trades found. Import trades or add them manually.</td></tr>';
-            console.log('ℹ️ No trades to display');
+            tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; color: #999; padding: 2rem;">No trades found.</td></tr>';
             return;
         }
-        
-        console.log(`📋 Displaying ${this.filteredTrades.length} trades`);
         
         this.filteredTrades.forEach(trade => {
             const row = document.createElement('tr');
@@ -962,6 +926,7 @@ class TradingJournal {
                     </span>
                 </td>
                 <td class="action-buttons">
+                    <button class="btn btn-info btn-sm" onclick="app.viewTradeDetails(${trade.id})" title="View details">👁️</button>
                     <button class="btn btn-primary btn-sm" onclick="app.editTrade(${trade.id})" title="Edit trade">✏️</button>
                     <button class="btn btn-danger btn-sm" onclick="app.deleteTrade(${trade.id})" title="Delete trade">🗑️</button>
                 </td>
@@ -974,13 +939,9 @@ class TradingJournal {
         if (tableInfo) {
             tableInfo.textContent = `Showing ${this.filteredTrades.length} of ${this.trades.length} trades`;
         }
-        
-        console.log('✅ Trade History updated');
     }
 
     populateFilterDropdowns() {
-        console.log('🎯 Populating filter dropdowns...');
-        
         const tickers = [...new Set(this.trades.map(t => t.ticker))].sort();
         const tickerSelect = document.getElementById('filter-ticker');
         if (tickerSelect) {
@@ -1004,13 +965,9 @@ class TradingJournal {
                 strategySelect.appendChild(option);
             });
         }
-        
-        console.log('✅ Filter dropdowns populated');
     }
 
     applyFilters() {
-        console.log('🔍 Applying filters...');
-        
         const tickerFilter = document.getElementById('filter-ticker')?.value;
         const strategyFilter = document.getElementById('filter-strategy')?.value;
         const dateFrom = document.getElementById('filter-date-from')?.value;
@@ -1035,14 +992,11 @@ class TradingJournal {
             return true;
         });
         
-        console.log(`✅ Filtered to ${this.filteredTrades.length} trades`);
         this.updateTradeHistory();
         this.updateDashboard();
     }
 
     resetFilters() {
-        console.log('🔄 Resetting filters...');
-        
         const filterTicker = document.getElementById('filter-ticker');
         const filterStrategy = document.getElementById('filter-strategy');
         const filterDateFrom = document.getElementById('filter-date-from');
@@ -1056,21 +1010,16 @@ class TradingJournal {
         this.filteredTrades = [...this.trades];
         this.updateTradeHistory();
         this.updateDashboard();
-        
-        console.log('✅ Filters reset');
     }
 
     async deleteTrade(id) {
-        if (!confirm('Are you sure you want to delete this trade?')) return;
-        
-        console.log('🗑️ Deleting trade:', id);
+        if (!confirm('Delete this trade?')) return;
         
         try {
             const trade = await this.db.get('trades', id);
             if (trade) {
                 this.currentBalance -= (trade.net_pl || 0);
                 await this.savePortfolioSettings();
-                console.log('💰 Portfolio adjusted:', this.formatCurrency(-(trade.net_pl || 0)));
             }
             
             await this.db.delete('trades', id);
@@ -1082,8 +1031,7 @@ class TradingJournal {
             await this.updateDashboard();
             this.populateFilterDropdowns();
             
-            this.showMessage('success', 'Trade deleted successfully');
-            console.log('✅ Trade deleted');
+            this.showMessage('success', 'Trade deleted');
             
         } catch (error) {
             console.error('❌ Error deleting trade:', error);
@@ -1092,16 +1040,11 @@ class TradingJournal {
     }
 
     // ============================================================================
-    // CHARTS
+    // CHARTS (keeping from v2.3 - no changes needed)
     // ============================================================================
 
     async updateCharts() {
-        if (typeof Chart === 'undefined') {
-            console.log('⚠️ Chart.js not available, skipping charts');
-            return;
-        }
-        
-        console.log('📊 Creating charts...');
+        if (typeof Chart === 'undefined') return;
         
         try {
             this.createPLChart();
@@ -1109,7 +1052,6 @@ class TradingJournal {
             this.createStrategyChart();
             this.createTopTickersChart();
             this.createMonthlyPLChart();
-            console.log('✅ All charts created');
         } catch (error) {
             console.error('❌ Error creating charts:', error);
         }
@@ -1119,12 +1061,10 @@ class TradingJournal {
         const ctx = document.getElementById('pl-over-time');
         if (!ctx) return;
         
-        if (this.charts.plOverTime) {
-            this.charts.plOverTime.destroy();
-        }
+        if (this.charts.plOverTime) this.charts.plOverTime.destroy();
         
         if (this.filteredTrades.length === 0) {
-            ctx.parentElement.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">No trade data yet. Add trades to see charts.</p>';
+            ctx.parentElement.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">No trade data yet.</p>';
             return;
         }
         
@@ -1132,10 +1072,7 @@ class TradingJournal {
         let cumulative = 0;
         const data = sortedTrades.map(trade => {
             cumulative += trade.net_pl || 0;
-            return {
-                x: new Date(trade.date),
-                y: cumulative
-            };
+            return { x: new Date(trade.date), y: cumulative };
         });
         
         this.charts.plOverTime = new Chart(ctx, {
@@ -1156,9 +1093,7 @@ class TradingJournal {
                 scales: {
                     x: {
                         type: 'time',
-                        time: {
-                            unit: 'day'
-                        },
+                        time: { unit: 'day' },
                         grid: { color: '#333' },
                         ticks: { color: '#ccc' }
                     },
@@ -1186,28 +1121,20 @@ class TradingJournal {
         const ctx = document.getElementById('portfolio-balance');
         if (!ctx) return;
         
-        if (this.charts.portfolioBalance) {
-            this.charts.portfolioBalance.destroy();
-        }
+        if (this.charts.portfolioBalance) this.charts.portfolioBalance.destroy();
         
         if (this.filteredTrades.length === 0 || this.startingCapital === 0) {
-            ctx.parentElement.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">Set portfolio settings and add trades to see balance chart.</p>';
+            ctx.parentElement.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">Set portfolio settings and add trades.</p>';
             return;
         }
         
         const sortedTrades = [...this.filteredTrades].sort((a, b) => new Date(a.date) - new Date(b.date));
         let balance = this.startingCapital;
-        const data = [{
-            x: sortedTrades[0] ? new Date(sortedTrades[0].date) : new Date(),
-            y: this.startingCapital
-        }];
+        const data = [{ x: sortedTrades[0] ? new Date(sortedTrades[0].date) : new Date(), y: this.startingCapital }];
         
         sortedTrades.forEach(trade => {
             balance += trade.net_pl || 0;
-            data.push({
-                x: new Date(trade.date),
-                y: balance
-            });
+            data.push({ x: new Date(trade.date), y: balance });
         });
         
         this.charts.portfolioBalance = new Chart(ctx, {
@@ -1266,18 +1193,13 @@ class TradingJournal {
         const ctx = document.getElementById('strategy-performance');
         if (!ctx) return;
         
-        if (this.charts.strategyPerformance) {
-            this.charts.strategyPerformance.destroy();
-        }
-        
+        if (this.charts.strategyPerformance) this.charts.strategyPerformance.destroy();
         if (this.filteredTrades.length === 0) return;
         
         const strategyData = {};
         this.filteredTrades.forEach(trade => {
             const strategy = trade.strategy || 'Unknown';
-            if (!strategyData[strategy]) {
-                strategyData[strategy] = 0;
-            }
+            if (!strategyData[strategy]) strategyData[strategy] = 0;
             strategyData[strategy] += trade.net_pl || 0;
         });
         
@@ -1327,18 +1249,13 @@ class TradingJournal {
         const ctx = document.getElementById('top-tickers');
         if (!ctx) return;
         
-        if (this.charts.topTickers) {
-            this.charts.topTickers.destroy();
-        }
-        
+        if (this.charts.topTickers) this.charts.topTickers.destroy();
         if (this.filteredTrades.length === 0) return;
         
         const tickerData = {};
         this.filteredTrades.forEach(trade => {
             const ticker = trade.ticker || 'Unknown';
-            if (!tickerData[ticker]) {
-                tickerData[ticker] = 0;
-            }
+            if (!tickerData[ticker]) tickerData[ticker] = 0;
             tickerData[ticker] += trade.net_pl || 0;
         });
         
@@ -1388,19 +1305,14 @@ class TradingJournal {
         const ctx = document.getElementById('monthly-pl');
         if (!ctx) return;
         
-        if (this.charts.monthlyPL) {
-            this.charts.monthlyPL.destroy();
-        }
-        
+        if (this.charts.monthlyPL) this.charts.monthlyPL.destroy();
         if (this.filteredTrades.length === 0) return;
         
         const monthlyData = {};
         this.filteredTrades.forEach(trade => {
             const date = new Date(trade.date);
             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            if (!monthlyData[monthKey]) {
-                monthlyData[monthKey] = 0;
-            }
+            if (!monthlyData[monthKey]) monthlyData[monthKey] = 0;
             monthlyData[monthKey] += trade.net_pl || 0;
         });
         
@@ -1451,27 +1363,16 @@ class TradingJournal {
     // ============================================================================
 
     openPortfolioModal() {
-        console.log('📂 Opening portfolio modal...');
         document.getElementById('starting-capital').value = this.startingCapital;
         document.getElementById('current-balance').value = this.currentBalance;
-        const modal = document.getElementById('portfolio-settings-modal');
-        if (modal) {
-            modal.style.display = 'flex';
-            console.log('✅ Modal opened');
-        }
+        document.getElementById('portfolio-settings-modal').style.display = 'flex';
     }
 
     closePortfolioModal() {
-        console.log('❌ Closing portfolio modal...');
-        const modal = document.getElementById('portfolio-settings-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
+        document.getElementById('portfolio-settings-modal').style.display = 'none';
     }
 
     showMessage(type, message, containerId = null) {
-        console.log(`📢 Message (${type}): ${message}`);
-        
         const container = containerId ? document.getElementById(containerId) : document.body;
         if (!container) return;
         
@@ -1502,9 +1403,7 @@ class TradingJournal {
         container.appendChild(messageEl);
         
         setTimeout(() => {
-            if (messageEl.parentNode) {
-                messageEl.parentNode.removeChild(messageEl);
-            }
+            if (messageEl.parentNode) messageEl.parentNode.removeChild(messageEl);
         }, 5000);
     }
 
@@ -1527,46 +1426,36 @@ class TradingJournal {
 // INITIALIZATION
 // ============================================================================
 
-console.log('⏳ Waiting for DOM to load...');
-
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('✅ DOM loaded, creating Trading Journal...');
     window.app = new TradingJournal();
     window.app.init().catch(error => {
         console.error('💥 Failed to initialize:', error);
-        alert('Failed to initialize Trading Journal. Check console (F12) for details.');
+        alert('Failed to initialize Trading Journal. Check console (F12).');
     });
 });
 
-// Global functions for HTML onclick handlers
 window.openPortfolioSettings = function() {
-    console.log('🔗 openPortfolioSettings called from HTML');
     if (window.app) {
         window.app.openPortfolioModal();
     } else {
-        console.error('❌ App not initialized yet');
-        alert('App is still loading, please wait a moment');
+        alert('App is still loading...');
     }
 };
 
 window.app = window.app || {};
 
-// Debug function
 window.debugApp = function() {
     console.log('=== 🔍 DEBUG INFO ===');
     console.log('App exists:', !!window.app);
     console.log('IDB loaded:', typeof idb !== 'undefined');
     console.log('Chart.js loaded:', typeof Chart !== 'undefined');
     if (window.app) {
-        console.log('Database:', window.app.db);
-        console.log('Trades in memory:', window.app.trades.length);
-        console.log('Filtered trades:', window.app.filteredTrades.length);
+        console.log('Trades:', window.app.trades.length);
         console.log('Portfolio:', {
             startingCapital: window.app.startingCapital,
             currentBalance: window.app.currentBalance
         });
-        console.log('Charts:', Object.keys(window.app.charts));
     }
 };
 
-console.log('✅ app.js v2.3 loaded - FINAL Complete Edition with Add & Edit Trade');
+console.log('✅ app.js v2.4 loaded - Complete with View Details');
