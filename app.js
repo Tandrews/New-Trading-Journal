@@ -1,15 +1,17 @@
 // =============================================================================
-// COMPLETE Trading Journal app.js v2.2 - PRODUCTION READY
+// COMPLETE Trading Journal app.js v2.3 - FINAL PRODUCTION VERSION
 // =============================================================================
-// ✅ Proper CSV parsing (handles quoted fields) - imports all 112 trades
+// ✅ Proper CSV parsing - imports all 112 trades
 // ✅ Portfolio tracking with auto-updates
 // ✅ All 5 interactive charts
 // ✅ Trade History table with filters
+// ✅ ADD TRADE functionality ← NEW
+// ✅ EDIT TRADE functionality ← NEW
 // ✅ Delete trades functionality
 // ✅ Comprehensive error logging
 // =============================================================================
 
-console.log('🚀 Loading Trading Journal v2.2 - Complete Edition...');
+console.log('🚀 Loading Trading Journal v2.3 - Final Complete Edition...');
 
 class TradingJournal {
     constructor() {
@@ -23,6 +25,7 @@ class TradingJournal {
         this.previewData = null;
         this.charts = {};
         this.metrics = {};
+        this.currentEditId = null; // For edit modal
         
         // Portfolio properties
         this.startingCapital = 0;
@@ -186,6 +189,26 @@ class TradingJournal {
             });
             console.log('✅ Tab listeners attached');
             
+            // Add Trade Form
+            const addTradeForm = document.getElementById('add-trade-form');
+            if (addTradeForm) {
+                addTradeForm.addEventListener('submit', (e) => {
+                    console.log('➕ Add trade form submitted');
+                    this.handleAddTrade(e);
+                });
+                console.log('✅ Add trade form listener attached');
+            }
+            
+            // Edit Trade Form
+            const editTradeForm = document.getElementById('edit-trade-form');
+            if (editTradeForm) {
+                editTradeForm.addEventListener('submit', (e) => {
+                    console.log('✏️ Edit trade form submitted');
+                    this.handleEditTrade(e);
+                });
+                console.log('✅ Edit trade form listener attached');
+            }
+            
             // Portfolio settings form
             const portfolioForm = document.getElementById('portfolio-settings-form');
             if (portfolioForm) {
@@ -254,6 +277,227 @@ class TradingJournal {
         }
     }
 
+    // ============================================================================
+    // ADD TRADE FUNCTIONALITY
+    // ============================================================================
+    
+    async handleAddTrade(e) {
+        e.preventDefault();
+        console.log('➕ Processing new trade...');
+        
+        try {
+            const formData = new FormData(e.target);
+            
+            // Create trade object
+            const trade = {
+                date: formData.get('trade-date'),
+                ticker: formData.get('ticker')?.toUpperCase(),
+                strategy: formData.get('strategy'),
+                option_type: formData.get('option-type'),
+                strike: formData.get('strike'),
+                expiration: formData.get('expiration'),
+                quantity: parseInt(formData.get('quantity')) || 1,
+                entry_price: parseFloat(formData.get('entry-price')) || null,
+                exit_price: parseFloat(formData.get('exit-price')) || null,
+                premium: parseFloat(formData.get('premium')) || 0,
+                fees: parseFloat(formData.get('fees')) || 0,
+                delta: parseFloat(formData.get('delta')) || null,
+                gamma: parseFloat(formData.get('gamma')) || null,
+                theta: parseFloat(formData.get('theta')) || null,
+                vega: parseFloat(formData.get('vega')) || null,
+                trade_notes: formData.get('trade-notes'),
+                created_at: new Date().toISOString()
+            };
+            
+            // Calculate net P&L
+            trade.net_pl = trade.premium + trade.fees;
+            trade.outcome = trade.net_pl >= 0 ? 'Win' : 'Loss';
+            
+            console.log('Trade data:', trade);
+            
+            // Validate required fields
+            if (!trade.date || !trade.ticker || !trade.strategy) {
+                this.showMessage('error', 'Please fill in all required fields (Date, Ticker, Strategy)');
+                return;
+            }
+            
+            // Save to database
+            const id = await this.db.add('trades', trade);
+            trade.id = id;
+            console.log('✅ Trade saved with ID:', id);
+            
+            // Update local trades array
+            this.trades.unshift(trade);
+            this.filteredTrades = [...this.trades];
+            
+            // Update portfolio
+            this.currentBalance += trade.net_pl;
+            await this.savePortfolioSettings();
+            console.log('💰 Portfolio updated:', this.formatCurrency(this.currentBalance));
+            
+            // Update UI
+            this.populateFilterDropdowns();
+            await this.updateDashboard();
+            if (this.currentTab === 'history') {
+                this.updateTradeHistory();
+            }
+            
+            // Clear form and show success
+            e.target.reset();
+            this.showMessage('success', `Trade added successfully! P&L: ${this.formatCurrency(trade.net_pl)}. Portfolio updated.`);
+            
+        } catch (error) {
+            console.error('❌ Error adding trade:', error);
+            this.showMessage('error', 'Failed to add trade: ' + error.message);
+        }
+    }
+
+    // ============================================================================
+    // EDIT TRADE FUNCTIONALITY
+    // ============================================================================
+    
+    async editTrade(id) {
+        console.log('✏️ Opening edit modal for trade:', id);
+        
+        try {
+            // Get trade from database
+            const trade = await this.db.get('trades', id);
+            if (!trade) {
+                this.showMessage('error', 'Trade not found');
+                return;
+            }
+            
+            console.log('Trade to edit:', trade);
+            
+            // Store current edit ID
+            this.currentEditId = id;
+            
+            // Populate form fields
+            document.getElementById('edit-trade-id').value = id;
+            document.getElementById('edit-trade-date').value = trade.date || '';
+            document.getElementById('edit-ticker').value = trade.ticker || '';
+            document.getElementById('edit-strategy').value = trade.strategy || '';
+            document.getElementById('edit-option-type').value = trade.option_type || 'CALL';
+            document.getElementById('edit-strike').value = trade.strike || '';
+            document.getElementById('edit-expiration').value = trade.expiration || '';
+            document.getElementById('edit-quantity').value = trade.quantity || 1;
+            document.getElementById('edit-entry-price').value = trade.entry_price || '';
+            document.getElementById('edit-exit-price').value = trade.exit_price || '';
+            document.getElementById('edit-premium').value = trade.premium || 0;
+            document.getElementById('edit-fees').value = trade.fees || 0;
+            document.getElementById('edit-delta').value = trade.delta || '';
+            document.getElementById('edit-gamma').value = trade.gamma || '';
+            document.getElementById('edit-theta').value = trade.theta || '';
+            document.getElementById('edit-vega').value = trade.vega || '';
+            document.getElementById('edit-trade-notes').value = trade.trade_notes || '';
+            
+            // Open modal
+            this.openEditModal();
+            console.log('✅ Edit modal opened');
+            
+        } catch (error) {
+            console.error('❌ Error loading trade for edit:', error);
+            this.showMessage('error', 'Failed to load trade for editing');
+        }
+    }
+    
+    openEditModal() {
+        const modal = document.getElementById('edit-trade-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    }
+    
+    closeEditModal() {
+        console.log('❌ Closing edit modal');
+        const modal = document.getElementById('edit-trade-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        this.currentEditId = null;
+    }
+    
+    async handleEditTrade(e) {
+        e.preventDefault();
+        console.log('💾 Saving edited trade...');
+        
+        try {
+            const id = parseInt(document.getElementById('edit-trade-id').value);
+            
+            // Get original trade for portfolio adjustment
+            const originalTrade = await this.db.get('trades', id);
+            const originalPL = originalTrade ? (originalTrade.net_pl || 0) : 0;
+            
+            // Get form data
+            const formData = new FormData(e.target);
+            
+            const updatedTrade = {
+                id: id,
+                date: document.getElementById('edit-trade-date').value,
+                ticker: document.getElementById('edit-ticker').value?.toUpperCase(),
+                strategy: document.getElementById('edit-strategy').value,
+                option_type: document.getElementById('edit-option-type').value,
+                strike: document.getElementById('edit-strike').value,
+                expiration: document.getElementById('edit-expiration').value,
+                quantity: parseInt(document.getElementById('edit-quantity').value) || 1,
+                entry_price: parseFloat(document.getElementById('edit-entry-price').value) || null,
+                exit_price: parseFloat(document.getElementById('edit-exit-price').value) || null,
+                premium: parseFloat(document.getElementById('edit-premium').value) || 0,
+                fees: parseFloat(document.getElementById('edit-fees').value) || 0,
+                delta: parseFloat(document.getElementById('edit-delta').value) || null,
+                gamma: parseFloat(document.getElementById('edit-gamma').value) || null,
+                theta: parseFloat(document.getElementById('edit-theta').value) || null,
+                vega: parseFloat(document.getElementById('edit-vega').value) || null,
+                trade_notes: document.getElementById('edit-trade-notes').value,
+                updated_at: new Date().toISOString(),
+                created_at: originalTrade.created_at
+            };
+            
+            // Calculate new P&L
+            updatedTrade.net_pl = updatedTrade.premium + updatedTrade.fees;
+            updatedTrade.outcome = updatedTrade.net_pl >= 0 ? 'Win' : 'Loss';
+            
+            console.log('Updated trade:', updatedTrade);
+            
+            // Save to database
+            await this.db.put('trades', updatedTrade);
+            console.log('✅ Trade updated in database');
+            
+            // Adjust portfolio (remove old P&L, add new P&L)
+            const plDifference = updatedTrade.net_pl - originalPL;
+            this.currentBalance += plDifference;
+            await this.savePortfolioSettings();
+            console.log('💰 Portfolio adjusted by:', this.formatCurrency(plDifference));
+            
+            // Update local arrays
+            const index = this.trades.findIndex(t => t.id === id);
+            if (index !== -1) {
+                this.trades[index] = updatedTrade;
+            }
+            const filteredIndex = this.filteredTrades.findIndex(t => t.id === id);
+            if (filteredIndex !== -1) {
+                this.filteredTrades[filteredIndex] = updatedTrade;
+            }
+            
+            // Update UI
+            this.closeEditModal();
+            this.populateFilterDropdowns();
+            this.updateTradeHistory();
+            await this.updateDashboard();
+            
+            this.showMessage('success', `Trade updated successfully! Portfolio adjusted by ${this.formatCurrency(plDifference)}`);
+            console.log('✅ Trade edit complete');
+            
+        } catch (error) {
+            console.error('❌ Error updating trade:', error);
+            this.showMessage('error', 'Failed to update trade: ' + error.message);
+        }
+    }
+
+    // ============================================================================
+    // PORTFOLIO SETTINGS
+    // ============================================================================
+
     async handlePortfolioSettings(e) {
         e.preventDefault();
         console.log('💼 Processing portfolio settings...');
@@ -294,6 +538,10 @@ class TradingJournal {
         }
     }
 
+    // ============================================================================
+    // CSV IMPORT
+    // ============================================================================
+
     handleFileUpload(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -314,7 +562,6 @@ class TradingJournal {
         reader.readAsText(file);
     }
 
-    // Proper CSV parser that handles quoted fields with commas
     parseCSVLine(line) {
         const result = [];
         let current = '';
@@ -347,10 +594,8 @@ class TradingJournal {
                 return;
             }
             
-            // Parse header with proper quote handling
             const headers = this.parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, '_'));
             console.log('📋 Headers found:', headers.length);
-            console.log('📋 Sample headers:', headers.slice(0, 10));
             
             const trades = [];
             let skipped = 0;
@@ -358,7 +603,6 @@ class TradingJournal {
             for (let i = 1; i < lines.length; i++) {
                 const values = this.parseCSVLine(lines[i]);
                 
-                // Handle column count mismatch
                 if (values.length < headers.length) {
                     while (values.length < headers.length) {
                         values.push('');
@@ -370,7 +614,6 @@ class TradingJournal {
                     trade[header] = values[index] || '';
                 });
                 
-                // More lenient validation - only require date and ticker
                 if (!trade.date || trade.date === '') {
                     skipped++;
                     continue;
@@ -381,7 +624,6 @@ class TradingJournal {
                     continue;
                 }
                 
-                // Parse numeric fields
                 trade.net_pl = parseFloat(trade.net_pl || trade.net_p_l || 0);
                 trade.premium = parseFloat(trade.premium || 0);
                 trade.fees = parseFloat(trade.fees || -0.65);
@@ -389,7 +631,6 @@ class TradingJournal {
                 trade.entry_price = trade.entry_price ? parseFloat(trade.entry_price) : null;
                 trade.exit_price = trade.exit_price ? parseFloat(trade.exit_price) : null;
                 
-                // Clean up fields
                 trade.ticker = trade.ticker.toUpperCase();
                 trade.strategy = trade.strategy || 'Unknown';
                 trade.outcome = trade.outcome || ((trade.net_pl >= 0) ? 'Win' : 'Loss');
@@ -399,7 +640,6 @@ class TradingJournal {
             }
             
             console.log(`✅ Parsed ${trades.length} trades (skipped ${skipped} invalid rows)`);
-            console.log(`📊 Total lines in CSV: ${lines.length - 1}, Successfully parsed: ${trades.length}`);
             
             if (trades.length === 0) {
                 this.showMessage('error', 'No valid trades found in CSV');
@@ -507,17 +747,14 @@ class TradingJournal {
             console.log(`✅ Successfully added ${successCount} trades`);
             console.log(`💰 Total P&L: ${this.formatCurrency(totalPL)}`);
             
-            // Update portfolio
             this.currentBalance += totalPL;
             await this.savePortfolioSettings();
             
-            // Update UI
             this.trades.sort((a, b) => new Date(b.date) - new Date(a.date));
             this.filteredTrades = [...this.trades];
             this.populateFilterDropdowns();
             await this.updateDashboard();
             
-            // Show success
             const previewStatus = document.getElementById('preview-status');
             if (previewStatus) {
                 previewStatus.textContent = 'Data Committed Successfully ✅';
@@ -533,6 +770,10 @@ class TradingJournal {
             this.showMessage('error', 'Import failed: ' + error.message, 'import-message');
         }
     }
+
+    // ============================================================================
+    // NAVIGATION & UI
+    // ============================================================================
 
     showTab(tabName) {
         document.querySelectorAll('.tab-content').forEach(content => {
@@ -676,7 +917,10 @@ class TradingJournal {
         });
     }
 
-    // TRADE HISTORY METHODS
+    // ============================================================================
+    // TRADE HISTORY
+    // ============================================================================
+
     updateTradeHistory() {
         console.log('📋 Updating Trade History...');
         
@@ -718,6 +962,7 @@ class TradingJournal {
                     </span>
                 </td>
                 <td class="action-buttons">
+                    <button class="btn btn-primary btn-sm" onclick="app.editTrade(${trade.id})" title="Edit trade">✏️</button>
                     <button class="btn btn-danger btn-sm" onclick="app.deleteTrade(${trade.id})" title="Delete trade">🗑️</button>
                 </td>
             `;
@@ -846,7 +1091,10 @@ class TradingJournal {
         }
     }
 
-    // CHART METHODS
+    // ============================================================================
+    // CHARTS
+    // ============================================================================
+
     async updateCharts() {
         if (typeof Chart === 'undefined') {
             console.log('⚠️ Chart.js not available, skipping charts');
@@ -876,7 +1124,7 @@ class TradingJournal {
         }
         
         if (this.filteredTrades.length === 0) {
-            ctx.parentElement.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">No trade data yet. Import trades to see charts.</p>';
+            ctx.parentElement.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">No trade data yet. Add trades to see charts.</p>';
             return;
         }
         
@@ -943,7 +1191,7 @@ class TradingJournal {
         }
         
         if (this.filteredTrades.length === 0 || this.startingCapital === 0) {
-            ctx.parentElement.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">Set portfolio settings and import trades to see balance chart.</p>';
+            ctx.parentElement.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">Set portfolio settings and add trades to see balance chart.</p>';
             return;
         }
         
@@ -1198,6 +1446,10 @@ class TradingJournal {
         });
     }
 
+    // ============================================================================
+    // MODALS & UTILITIES
+    // ============================================================================
+
     openPortfolioModal() {
         console.log('📂 Opening portfolio modal...');
         document.getElementById('starting-capital').value = this.startingCapital;
@@ -1271,7 +1523,10 @@ class TradingJournal {
     }
 }
 
-// Initialize app when DOM is ready
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+
 console.log('⏳ Waiting for DOM to load...');
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1283,7 +1538,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Global function for HTML onclick handlers
+// Global functions for HTML onclick handlers
 window.openPortfolioSettings = function() {
     console.log('🔗 openPortfolioSettings called from HTML');
     if (window.app) {
@@ -1293,6 +1548,8 @@ window.openPortfolioSettings = function() {
         alert('App is still loading, please wait a moment');
     }
 };
+
+window.app = window.app || {};
 
 // Debug function
 window.debugApp = function() {
@@ -1312,4 +1569,4 @@ window.debugApp = function() {
     }
 };
 
-console.log('✅ app.js v2.2 loaded - Complete Edition');
+console.log('✅ app.js v2.3 loaded - FINAL Complete Edition with Add & Edit Trade');
