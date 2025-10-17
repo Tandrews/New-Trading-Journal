@@ -579,7 +579,7 @@
     <div class="modal-content" style="max-width: 900px;">
         <div class="modal-header">
             <h2>👁️ Trade Details</h2>
-            <button class="close-btn" onclick="app.closeViewModal()">&times;</button>
+           <button onclick="document.getElementById('view-trade-modal').style.display='none'">Close</button>
         </div>
         <div class="modal-body">
             <div id="view-details-content">
@@ -587,7 +587,7 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="app.closeViewModal()">Close</button>
+           <button onclick="document.getElementById('view-trade-modal').style.display='none'">Close</button>
         </div>
     </div>
 </div>
