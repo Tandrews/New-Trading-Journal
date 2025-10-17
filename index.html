@@ -436,15 +436,40 @@
                     </button>
                 </div>
             </div>
+// =============================================================================
+// HTML: Add this button to your Import/Export tab in index.html
+// Place it AFTER the import section, before closing the tab div
+// =============================================================================
 
-            <!-- Export Section -->
-            <div class="export-section">
-                <h2>📤 Export Trades</h2>
-                <p>Download your trades as a CSV file for backup or analysis</p>
-                <button class="btn btn-primary" onclick="alert('Export functionality coming soon!')">
-                    📥 Export to CSV
-                </button>
-            </div>
+<div class="export-section" style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #333;">
+    <h3 style="color: #00ff88; margin-bottom: 1rem;">📥 Export Trades</h3>
+    <p style="color: #999; margin-bottom: 1rem;">
+        Download all your trades as a CSV file for backup or analysis in Excel.
+    </p>
+    <button class="btn btn-success" onclick="app.exportToCSV()" style="font-size: 1.1rem; padding: 0.8rem 2rem;">
+        📥 Download Trades CSV
+    </button>
+    <p style="color: #666; margin-top: 0.5rem; font-size: 0.9rem;">
+        Exports all <span id="export-count">0</span> trades
+    </p>
+</div>
+
+<script>
+// Update export count when tab loads
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.app) {
+        const updateExportCount = () => {
+            const countEl = document.getElementById('export-count');
+            if (countEl && window.app.trades) {
+                countEl.textContent = window.app.trades.length;
+            }
+        };
+        setInterval(updateExportCount, 1000);
+    }
+});
+</script>
+
+           
         </div>
     </div>
 
