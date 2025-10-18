@@ -120,18 +120,60 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Strategy</label>
-                        <select id="strategy" class="form-control" required>
-                            <option value="">Select Strategy</option>
-                            <option value="Call Spread">Call Spread</option>
-                            <option value="Put Spread">Put Spread</option>
-                            <option value="Iron Condor">Iron Condor</option>
-                            <option value="Straddle">Straddle</option>
-                            <option value="Strangle">Strangle</option>
-                            <option value="Covered Call">Covered Call</option>
-                            <option value="Cash Secured Put">Cash Secured Put</option>
-                            <option value="Naked Call">Naked Call</option>
-                            <option value="Naked Put">Naked Put</option>
-                        </select>
+                        <select id="strategy" name="strategy" required>
+    <option value="">Select Strategy</option>
+    
+    <optgroup label="📈 Vertical Spreads">
+        <option value="Bull Call Spread">Bull Call Spread</option>
+        <option value="Bear Call Spread">Bear Call Spread</option>
+        <option value="Bull Put Spread">Bull Put Spread</option>
+        <option value="Bear Put Spread">Bear Put Spread</option>
+        <option value="Call Spread">Call Spread</option>
+        <option value="Put Spread">Put Spread</option>
+    </optgroup>
+    
+    <optgroup label="🦋 Multi-Leg Strategies">
+        <option value="Iron Condor">Iron Condor</option>
+        <option value="Iron Butterfly">Iron Butterfly</option>
+        <option value="Butterfly Spread">Butterfly Spread</option>
+        <option value="Calendar Spread">Calendar Spread</option>
+        <option value="Diagonal Spread">Diagonal Spread</option>
+    </optgroup>
+    
+    <optgroup label="⚡ Volatility Strategies">
+        <option value="Straddle">Straddle</option>
+        <option value="Strangle">Strangle</option>
+        <option value="Long Straddle">Long Straddle</option>
+        <option value="Short Straddle">Short Straddle</option>
+        <option value="Long Strangle">Long Strangle</option>
+        <option value="Short Strangle">Short Strangle</option>
+    </optgroup>
+    
+    <optgroup label="📊 Single Leg">
+        <option value="Long Call">Long Call</option>
+        <option value="Short Call">Short Call</option>
+        <option value="Long Put">Long Put</option>
+        <option value="Short Put">Short Put</option>
+        <option value="Covered Call">Covered Call</option>
+        <option value="Protective Put">Protective Put</option>
+    </optgroup>
+    
+    <optgroup label="🚀 Advanced Strategies">
+        <option value="Ratio Spread">Ratio Spread</option>
+        <option value="Back Spread">Back Spread</option>
+        <option value="Jade Lizard">Jade Lizard</option>
+        <option value="Big Lizard">Big Lizard</option>
+        <option value="Broken Wing Butterfly">Broken Wing Butterfly</option>
+        <option value="Christmas Tree">Christmas Tree</option>
+        <option value="Condor">Condor</option>
+    </optgroup>
+    
+    <optgroup label="🔧 Other">
+        <option value="Custom">Custom</option>
+        <option value="Other">Other</option>
+    </optgroup>
+</select>
+
                     </div>
                     <div class="form-group">
                         <label class="form-label">Option Type</label>
@@ -376,17 +418,60 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Strategy</label>
-                            <select id="editStrategy" class="form-control" required>
-                                <option value="Call Spread">Call Spread</option>
-                                <option value="Put Spread">Put Spread</option>
-                                <option value="Iron Condor">Iron Condor</option>
-                                <option value="Straddle">Straddle</option>
-                                <option value="Strangle">Strangle</option>
-                                <option value="Covered Call">Covered Call</option>
-                                <option value="Cash Secured Put">Cash Secured Put</option>
-                                <option value="Naked Call">Naked Call</option>
-                                <option value="Naked Put">Naked Put</option>
-                            </select>
+                            <select id="edit-strategy" name="strategy" required>
+    <option value="">Select Strategy</option>
+    
+    <optgroup label="📈 Vertical Spreads">
+        <option value="Bull Call Spread">Bull Call Spread</option>
+        <option value="Bear Call Spread">Bear Call Spread</option>
+        <option value="Bull Put Spread">Bull Put Spread</option>
+        <option value="Bear Put Spread">Bear Put Spread</option>
+        <option value="Call Spread">Call Spread</option>
+        <option value="Put Spread">Put Spread</option>
+    </optgroup>
+    
+    <optgroup label="🦋 Multi-Leg Strategies">
+        <option value="Iron Condor">Iron Condor</option>
+        <option value="Iron Butterfly">Iron Butterfly</option>
+        <option value="Butterfly Spread">Butterfly Spread</option>
+        <option value="Calendar Spread">Calendar Spread</option>
+        <option value="Diagonal Spread">Diagonal Spread</option>
+    </optgroup>
+    
+    <optgroup label="⚡ Volatility Strategies">
+        <option value="Straddle">Straddle</option>
+        <option value="Strangle">Strangle</option>
+        <option value="Long Straddle">Long Straddle</option>
+        <option value="Short Straddle">Short Straddle</option>
+        <option value="Long Strangle">Long Strangle</option>
+        <option value="Short Strangle">Short Strangle</option>
+    </optgroup>
+    
+    <optgroup label="📊 Single Leg">
+        <option value="Long Call">Long Call</option>
+        <option value="Short Call">Short Call</option>
+        <option value="Long Put">Long Put</option>
+        <option value="Short Put">Short Put</option>
+        <option value="Covered Call">Covered Call</option>
+        <option value="Protective Put">Protective Put</option>
+    </optgroup>
+    
+    <optgroup label="🚀 Advanced Strategies">
+        <option value="Ratio Spread">Ratio Spread</option>
+        <option value="Back Spread">Back Spread</option>
+        <option value="Jade Lizard">Jade Lizard</option>
+        <option value="Big Lizard">Big Lizard</option>
+        <option value="Broken Wing Butterfly">Broken Wing Butterfly</option>
+        <option value="Christmas Tree">Christmas Tree</option>
+        <option value="Condor">Condor</option>
+    </optgroup>
+    
+    <optgroup label="🔧 Other">
+        <option value="Custom">Custom</option>
+        <option value="Other">Other</option>
+    </optgroup>
+</select>
+
                         </div>
                         <div class="form-group">
                             <label class="form-label">Option Type</label>
