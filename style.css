@@ -1437,3 +1437,41 @@ select.form-control {
     color: var(--accent-red);
     border: 1px solid var(--accent-red);
 }
+/* Fix strategy dropdown and optgroup styling */
+select option,
+select optgroup {
+    background-color: #1a1c23;
+    color: #fff;
+}
+
+select optgroup {
+    background-color: #0f1015;
+    color: #00ff88;
+    font-weight: bold;
+    font-style: normal;
+}
+
+select option {
+    padding: 8px;
+    background-color: #1a1c23;
+}
+
+select option:hover,
+select option:checked {
+    background-color: #2a2c33;
+}
+
+/* Make sure select itself has dark background */
+select {
+    background-color: #1a1c23;
+    color: #fff;
+    border: 1px solid #333;
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+select:focus {
+    outline: none;
+    border-color: #00ff88;
+    box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
+}
