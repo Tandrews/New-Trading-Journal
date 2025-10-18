@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Journal v3.0</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/idb@7/build/umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Trading Journal v3.0</h1>
+            <div class="header-actions">
+                <button id="portfolioSettingsBtn" class="btn btn--secondary">⚙️ Portfolio Settings</button>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-btn" data-tab="add-trade">Add Trade</button>
+            <button class="tab-btn" data-tab="trade-history">Trade History</button>
+            <button class="tab-btn" data-tab="import-export">Import/Export</button>
+            <button class="tab-btn" data-tab="analytics">Analytics</button>
+        </nav>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>Total P&amp;L</h3>
+                    <div id="totalPL" class="metric-value">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Win Rate</h3>
+                    <div id="winRate" class="metric-value">0%</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Total Trades</h3>
+                    <div id="totalTrades" class="metric-value">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Average Win</h3>
+                    <div id="avgWin" class="metric-value">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Average Loss</h3>
+                    <div id="avgLoss" class="metric-value">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Profit Factor</h3>
+                    <div id="profitFactor" class="metric-value">0.00</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Max Drawdown</h3>
+                    <div id="maxDrawdown" class="metric-value">0.00%</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Sharpe Ratio</h3>
+                    <div id="sharpeRatio" class="metric-value">0.00</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Current Streak</h3>
+                    <div id="currentStreak" class="metric-value">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Max Consecutive Wins</h3>
+                    <div id="maxWins" class="metric-value">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Max Consecutive Losses</h3>
+                    <div id="maxLosses" class="metric-value">0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Portfolio Balance</h3>
+                    <div id="portfolioBalance" class="metric-value">$0.00</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>P&amp;L Over Time</h3>
+                    <canvas id="plChart" width="400" height="200"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Portfolio Balance</h3>
+                    <canvas id="portfolioChart" width="400" height="200"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Strategy Performance</h3>
+                    <canvas id="strategyChart" width="400" height="200"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Top Tickers</h3>
+                    <canvas id="tickerChart" width="400" height="200"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Monthly P&amp;L</h3>
+                    <canvas id="monthlyChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Trade Tab -->
+        <div id="add-trade" class="tab-content">
+            <form id="addTradeForm" class="trade-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Date</label>
+                        <input type="date" id="tradeDate" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ticker</label>
+                        <input type="text" id="ticker" class="form-control" placeholder="SPY" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Strategy</label>
+                        <select id="strategy" class="form-control" required>
+                            <option value="">Select Strategy</option>
+                            <option value="Call Spread">Call Spread</option>
+                            <option value="Put Spread">Put Spread</option>
+                            <option value="Iron Condor">Iron Condor</option>
+                            <option value="Straddle">Straddle</option>
+                            <option value="Strangle">Strangle</option>
+                            <option value="Covered Call">Covered Call</option>
+                            <option value="Cash Secured Put">Cash Secured Put</option>
+                            <option value="Naked Call">Naked Call</option>
+                            <option value="Naked Put">Naked Put</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Option Type</label>
+                        <select id="optionType" class="form-control" required>
+                            <option value="">Select Type</option>
+                            <option value="CALL">CALL</option>
+                            <option value="PUT">PUT</option>
+                            <option value="SPREAD">SPREAD</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Strike Price</label>
+                        <input type="number" id="strike" class="form-control" step="0.01" placeholder="450.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Expiration</label>
+                        <input type="date" id="expiration" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" id="quantity" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Premium</label>
+                        <input type="number" id="premium" class="form-control" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Entry Price</label>
+                        <input type="number" id="entryPrice" class="form-control" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Exit Price</label>
+                        <input type="number" id="exitPrice" class="form-control" step="0.01">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Fees</label>
+                        <input type="number" id="fees" class="form-control" step="0.01" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Net P&amp;L</label>
+                        <input type="number" id="netPL" class="form-control" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Outcome</label>
+                        <select id="outcome" class="form-control" required>
+                            <option value="">Select Outcome</option>
+                            <option value="Win">Win</option>
+                            <option value="Loss">Loss</option>
+                            <option value="Breakeven">Breakeven</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="greeks-section">
+                    <h3>Greeks</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Delta</label>
+                            <input type="number" id="delta" class="form-control" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Gamma</label>
+                            <input type="number" id="gamma" class="form-control" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Theta</label>
+                            <input type="number" id="theta" class="form-control" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Vega</label>
+                            <input type="number" id="vega" class="form-control" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Trade Notes</label>
+                    <textarea id="tradeNotes" class="form-control" rows="3" placeholder="Any notes about this trade..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Post-Trade Analysis</label>
+                    <textarea id="postTradeAnalysis" class="form-control" rows="5" placeholder="What went well? What could be improved? Lessons learned..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn--primary btn--full-width">Add Trade</button>
+            </form>
+        </div>
+
+        <!-- Trade History Tab -->
+        <div id="trade-history" class="tab-content">
+            <div class="filters">
+                <div class="filter-group">
+                    <label class="form-label">Filter by Ticker:</label>
+                    <select id="tickerFilter" class="form-control">
+                        <option value="">All Tickers</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="form-label">Filter by Strategy:</label>
+                    <select id="strategyFilter" class="form-control">
+                        <option value="">All Strategies</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="form-label">From Date:</label>
+                    <input type="date" id="fromDate" class="form-control">
+                </div>
+                <div class="filter-group">
+                    <label class="form-label">To Date:</label>
+                    <input type="date" id="toDate" class="form-control">
+                </div>
+                <button id="clearFilters" class="btn btn--secondary">Clear Filters</button>
+            </div>
+
+            <div class="table-container">
+                <table id="tradesTable" class="trades-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="date" onclick="sortTradesByColumn('date')">Date <span class="sort-indicator"></span></th>
+                            <th class="sortable" data-sort="ticker" onclick="sortTradesByColumn('ticker')">Ticker <span class="sort-indicator"></span></th>
+                            <th class="sortable" data-sort="strategy" onclick="sortTradesByColumn('strategy')">Strategy <span class="sort-indicator"></span></th>
+                            <th>Strike</th>
+                            <th>Quantity</th>
+                            <th class="sortable" data-sort="premium" onclick="sortTradesByColumn('premium')">Premium <span class="sort-indicator"></span></th>
+                            <th class="sortable" data-sort="net_pl" onclick="sortTradesByColumn('net_pl')">Net P&amp;L <span class="sort-indicator"></span></th>
+                            <th class="sortable" data-sort="outcome" onclick="sortTradesByColumn('outcome')">Outcome <span class="sort-indicator"></span></th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tradesTableBody">
+                        <!-- Trades will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Import/Export Tab -->
+        <div id="import-export" class="tab-content">
+            <div class="import-section">
+                <h3>Import CSV</h3>
+                <input type="file" id="csvFileInput" accept=".csv" class="form-control">
+                <button id="previewCsvBtn" class="btn btn--secondary">Preview CSV</button>
+                <button id="importCsvBtn" class="btn btn--primary" disabled>Import Trades</button>
+            </div>
+
+            <div id="csvPreview" class="csv-preview" style="display: none;">
+                <h4>CSV Preview</h4>
+                <div class="table-container">
+                    <table id="previewTable" class="trades-table">
+                        <thead id="previewHeader"></thead>
+                        <tbody id="previewBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="export-section">
+                <h3>Export Data</h3>
+                <button id="exportCsvBtn" class="btn btn--primary">Export to CSV</button>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics" class="tab-content">
+            <div class="analytics-grid">
+                <div class="chart-container">
+                    <h3>Win Rate by Day of Week</h3>
+                    <canvas id="winRateDayChart" width="400" height="200"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Win Rate by Hour of Day</h3>
+                    <canvas id="winRateHourChart" width="400" height="200"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>P&amp;L by Day of Week</h3>
+                    <canvas id="plDayChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portfolio Settings Modal -->
+    <div id="portfolioModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Portfolio Settings</h3>
+                <span class="close" id="closePortfolioModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="portfolioForm">
+                    <div class="form-group">
+                        <label class="form-label">Starting Capital</label>
+                        <input type="number" id="startingCapital" class="form-control" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Current Balance</label>
+                        <input type="number" id="currentBalance" class="form-control" step="0.01" required>
+                    </div>
+                    <button type="submit" class="btn btn--primary">Save Settings</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Trade Modal -->
+    <div id="editTradeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Trade</h3>
+                <span class="close" id="closeEditModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editTradeForm" class="trade-form">
+                    <input type="hidden" id="editTradeId">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Date</label>
+                            <input type="date" id="editTradeDate" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ticker</label>
+                            <input type="text" id="editTicker" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Strategy</label>
+                            <select id="editStrategy" class="form-control" required>
+                                <option value="Call Spread">Call Spread</option>
+                                <option value="Put Spread">Put Spread</option>
+                                <option value="Iron Condor">Iron Condor</option>
+                                <option value="Straddle">Straddle</option>
+                                <option value="Strangle">Strangle</option>
+                                <option value="Covered Call">Covered Call</option>
+                                <option value="Cash Secured Put">Cash Secured Put</option>
+                                <option value="Naked Call">Naked Call</option>
+                                <option value="Naked Put">Naked Put</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Option Type</label>
+                            <select id="editOptionType" class="form-control" required>
+                                <option value="CALL">CALL</option>
+                                <option value="PUT">PUT</option>
+                                <option value="SPREAD">SPREAD</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Strike Price</label>
+                            <input type="number" id="editStrike" class="form-control" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Expiration</label>
+                            <input type="date" id="editExpiration" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" id="editQuantity" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Premium</label>
+                            <input type="number" id="editPremium" class="form-control" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Entry Price</label>
+                            <input type="number" id="editEntryPrice" class="form-control" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Exit Price</label>
+                            <input type="number" id="editExitPrice" class="form-control" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Fees</label>
+                            <input type="number" id="editFees" class="form-control" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Net P&amp;L</label>
+                            <input type="number" id="editNetPL" class="form-control" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Outcome</label>
+                            <select id="editOutcome" class="form-control" required>
+                                <option value="Win">Win</option>
+                                <option value="Loss">Loss</option>
+                                <option value="Breakeven">Breakeven</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="greeks-section">
+                        <h3>Greeks</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Delta</label>
+                                <input type="number" id="editDelta" class="form-control" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Gamma</label>
+                                <input type="number" id="editGamma" class="form-control" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Theta</label>
+                                <input type="number" id="editTheta" class="form-control" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Vega</label>
+                                <input type="number" id="editVega" class="form-control" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Trade Notes</label>
+                        <textarea id="editTradeNotes" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Post-Trade Analysis</label>
+                        <textarea id="editPostTradeAnalysis" class="form-control" rows="5"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn--primary">Update Trade</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Trade Details Modal -->
+    <div id="viewTradeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Trade Details</h3>
+                <span class="close" id="closeViewModal">&times;</span>
+            </div>
+            <div class="modal-body" id="viewTradeDetails">
+                <!-- Trade details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
