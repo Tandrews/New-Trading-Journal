@@ -387,33 +387,54 @@ function closePortfolioModal() {
     document.getElementById('portfolioModal').classList.remove('active');
 }
 
-function openEditModal(tradeId) {
-    const trade = allTrades.find(t => t.id === tradeId);
-    if (!trade) return;
-    
-    document.getElementById('editTradeId').value = trade.id;
-    document.getElementById('editTradeDate').value = trade.date;
-    document.getElementById('editTicker').value = trade.ticker;
-    document.getElementById('editStrategy').value = trade.strategy;
-    document.getElementById('editOptionType').value = trade.option_type;
-    document.getElementById('editStrike').value = trade.strike || '';
-    document.getElementById('editExpiration').value = trade.expiration || '';
-    document.getElementById('editQuantity').value = trade.quantity;
-    document.getElementById('editEntryPrice').value = trade.entry_price;
-    document.getElementById('editExitPrice').value = trade.exit_price || '';
-    document.getElementById('editPremium').value = trade.premium;
-    document.getElementById('editFees').value = trade.fees || 0;
-    document.getElementById('editNetPL').value = trade.net_pl;
-    document.getElementById('editOutcome').value = trade.outcome;
-    document.getElementById('editDelta').value = trade.delta || '';
-    document.getElementById('editGamma').value = trade.gamma || '';
-    document.getElementById('editTheta').value = trade.theta || '';
-    document.getElementById('editVega').value = trade.vega || '';
-    document.getElementById('editTradeNotes').value = trade.trade_notes || '';
-    document.getElementById('editPostTradeAnalysis').value = trade.post_trade_analysis || '';
-    
-    document.getElementById('editTradeModal').classList.add('active');
+async function openEditModal(tradeId) {
+    try {
+        const trade = await db.get('trades', tradeId);
+        if (!trade) {
+            showNotification('Trade not found', 'error');
+            return;
+        }
+        
+        // Use the ACTUAL IDs from your HTML (check your index.html)
+        // Common IDs are: edit-trade-id, edit-date, edit-ticker, etc.
+        
+        const setValueSafely = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.value = value || '';
+            } else {
+                console.warn(`Element not found: ${id}`);
+            }
+        };
+        
+        setValueSafely('edit-trade-id', trade.id);
+        setValueSafely('edit-date', trade.date);
+        setValueSafely('edit-ticker', trade.ticker);
+        setValueSafely('edit-strategy', trade.strategy);
+        setValueSafely('edit-option-type', trade.option_type);
+        setValueSafely('edit-strike', trade.strike);
+        setValueSafely('edit-expiration', trade.expiration);
+        setValueSafely('edit-quantity', trade.quantity);
+        setValueSafely('edit-entry-price', trade.entry_price);
+        setValueSafely('edit-exit-price', trade.exit_price);
+        setValueSafely('edit-premium', trade.premium);
+        setValueSafely('edit-fees', trade.fees);
+        setValueSafely('edit-delta', trade.delta);
+        setValueSafely('edit-gamma', trade.gamma);
+        setValueSafely('edit-theta', trade.theta);
+        setValueSafely('edit-vega', trade.vega);
+        setValueSafely('edit-notes', trade.trade_notes);
+        setValueSafely('edit-post-trade-analysis', trade.post_trade_analysis);
+        
+        // Show modal
+        document.getElementById('edit-trade-modal').style.display = 'flex';
+        
+    } catch (error) {
+        console.error('Error opening edit modal:', error);
+        showNotification('Failed to load trade', 'error');
+    }
 }
+
 
 function closeEditModal() {
     document.getElementById('editTradeModal').classList.remove('active');
