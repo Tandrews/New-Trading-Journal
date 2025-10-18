@@ -1475,3 +1475,40 @@ select:focus {
     border-color: #00ff88;
     box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
 }
+/* Universal form input dark theme for both Add and Edit modals */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+    background: #1a1c23 !important;
+    color: #fff !important;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 0.75rem;
+    font-size: 1rem;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+select:focus,
+textarea:focus {
+    border-color: #00ff88;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,255,136,0.08);
+}
+
+select option,
+select optgroup {
+    background: #1a1c23;
+    color: #fff;
+}
+
+.modal-content {
+    background: #151a1f;
+    border-radius: 8px;
+    border: 1px solid #333;
+    color: #fff;
+}
+
