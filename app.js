@@ -26,6 +26,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+function showNotification(message, type = 'info') {
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    
+    // Simple alert - can be upgraded to a nice toast notification later
+    if (type === 'error') {
+        alert('❌ Error: ' + message);
+    } else if (type === 'success') {
+        alert('✅ Success: ' + message);
+    } else {
+        alert('ℹ️ ' + message);
+    }
+}
+
+console.log('✅ Helper functions loaded');
+
 // IndexedDB Setup
 async function initDB() {
     try {
@@ -391,13 +410,11 @@ async function openEditModal(tradeId) {
     try {
         const trade = await db.get('trades', tradeId);
         if (!trade) {
-            showNotification('Trade not found', 'error');
+            alert('Trade not found');
             return;
         }
         
-        // Use the ACTUAL IDs from your HTML (check your index.html)
-        // Common IDs are: edit-trade-id, edit-date, edit-ticker, etc.
-        
+        // Helper to safely set values
         const setValueSafely = (id, value) => {
             const element = document.getElementById(id);
             if (element) {
@@ -407,6 +424,7 @@ async function openEditModal(tradeId) {
             }
         };
         
+        // Populate all form fields
         setValueSafely('edit-trade-id', trade.id);
         setValueSafely('edit-date', trade.date);
         setValueSafely('edit-ticker', trade.ticker);
@@ -426,14 +444,22 @@ async function openEditModal(tradeId) {
         setValueSafely('edit-notes', trade.trade_notes);
         setValueSafely('edit-post-trade-analysis', trade.post_trade_analysis);
         
-        // Show modal
-        document.getElementById('edit-trade-modal').style.display = 'flex';
+        // Show modal - try both possible ID formats
+        const modal = document.getElementById('edit-trade-modal') || document.getElementById('editTradeModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('active');
+        } else {
+            console.error('❌ Edit modal not found! Make sure you added the Edit Trade Modal HTML to index.html');
+            alert('ERROR: Edit modal is missing from your HTML. Please add the Edit Trade Modal section to your index.html file.');
+        }
         
     } catch (error) {
         console.error('Error opening edit modal:', error);
-        showNotification('Failed to load trade', 'error');
+        alert('Failed to load trade: ' + error.message);
     }
 }
+
 
 
 function closeEditModal() {
