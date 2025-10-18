@@ -590,5 +590,176 @@
     </div>
 
     <script src="app.js"></script>
+<!-- Edit Trade Modal -->
+<div id="edit-trade-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>✏️ Edit Trade</h2>
+            <button type="button" class="close-btn" onclick="closeEditModal()">&times;</button>
+        </div>
+        
+        <form id="edit-trade-form">
+            <input type="hidden" id="edit-trade-id">
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit-date">Date *</label>
+                    <input type="date" id="edit-date" name="date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-ticker">Ticker *</label>
+                    <input type="text" id="edit-ticker" name="ticker" required style="text-transform: uppercase;">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit-strategy">Strategy *</label>
+                    <select id="edit-strategy" name="strategy" required>
+                        <option value="">Select Strategy</option>
+                        <optgroup label="📈 Vertical Spreads">
+                            <option value="Bull Call Spread">Bull Call Spread</option>
+                            <option value="Bear Call Spread">Bear Call Spread</option>
+                            <option value="Bull Put Spread">Bull Put Spread</option>
+                            <option value="Bear Put Spread">Bear Put Spread</option>
+                            <option value="Call Spread">Call Spread</option>
+                            <option value="Put Spread">Put Spread</option>
+                        </optgroup>
+                        <optgroup label="🦋 Multi-Leg Strategies">
+                            <option value="Iron Condor">Iron Condor</option>
+                            <option value="Iron Butterfly">Iron Butterfly</option>
+                            <option value="Butterfly Spread">Butterfly Spread</option>
+                            <option value="Calendar Spread">Calendar Spread</option>
+                            <option value="Diagonal Spread">Diagonal Spread</option>
+                        </optgroup>
+                        <optgroup label="⚡ Volatility Strategies">
+                            <option value="Straddle">Straddle</option>
+                            <option value="Strangle">Strangle</option>
+                            <option value="Long Straddle">Long Straddle</option>
+                            <option value="Short Straddle">Short Straddle</option>
+                            <option value="Long Strangle">Long Strangle</option>
+                            <option value="Short Strangle">Short Strangle</option>
+                        </optgroup>
+                        <optgroup label="📊 Single Leg">
+                            <option value="Long Call">Long Call</option>
+                            <option value="Short Call">Short Call</option>
+                            <option value="Long Put">Long Put</option>
+                            <option value="Short Put">Short Put</option>
+                            <option value="Covered Call">Covered Call</option>
+                            <option value="Protective Put">Protective Put</option>
+                        </optgroup>
+                        <optgroup label="🚀 Advanced Strategies">
+                            <option value="Ratio Spread">Ratio Spread</option>
+                            <option value="Back Spread">Back Spread</option>
+                            <option value="Jade Lizard">Jade Lizard</option>
+                            <option value="Big Lizard">Big Lizard</option>
+                            <option value="Broken Wing Butterfly">Broken Wing Butterfly</option>
+                            <option value="Christmas Tree">Christmas Tree</option>
+                            <option value="Condor">Condor</option>
+                        </optgroup>
+                        <optgroup label="🔧 Other">
+                            <option value="Custom">Custom</option>
+                            <option value="Other">Other</option>
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-option-type">Option Type</label>
+                    <select id="edit-option-type" name="option-type">
+                        <option value="CALL">Call</option>
+                        <option value="PUT">Put</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit-strike">Strike</label>
+                    <input type="text" id="edit-strike" name="strike">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-expiration">Expiration</label>
+                    <input type="date" id="edit-expiration" name="expiration">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-quantity">Quantity</label>
+                    <input type="number" id="edit-quantity" name="quantity" value="1" min="1">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit-entry-price">Entry Price</label>
+                    <input type="number" step="0.01" id="edit-entry-price" name="entry-price">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-exit-price">Exit Price</label>
+                    <input type="number" step="0.01" id="edit-exit-price" name="exit-price">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit-premium">Premium *</label>
+                    <input type="number" step="0.01" id="edit-premium" name="premium" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-fees">Fees</label>
+                    <input type="number" step="0.01" id="edit-fees" name="fees" value="-0.65">
+                </div>
+            </div>
+            
+            <h3 style="color: #00ff88; margin-top: 1.5rem;">Greeks (Optional)</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit-delta">Delta</label>
+                    <input type="number" step="0.01" id="edit-delta" name="delta">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-gamma">Gamma</label>
+                    <input type="number" step="0.01" id="edit-gamma" name="gamma">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-theta">Theta</label>
+                    <input type="number" step="0.01" id="edit-theta" name="theta">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-vega">Vega</label>
+                    <input type="number" step="0.01" id="edit-vega" name="vega">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="edit-notes">Trade Notes</label>
+                <textarea id="edit-notes" name="notes" rows="3" placeholder="Quick notes about this trade..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="edit-post-trade-analysis">📊 Post-Trade Analysis</label>
+                <textarea id="edit-post-trade-analysis" name="post-trade-analysis" rows="5" placeholder="Detailed analysis after closing the trade:
+• What went right/wrong?
+• What would you do differently?
+• Lessons learned
+• Pattern recognition"></textarea>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+   
 </body>
 </html>
