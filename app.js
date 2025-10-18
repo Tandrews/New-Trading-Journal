@@ -437,8 +437,14 @@ async function openEditModal(tradeId) {
 
 
 function closeEditModal() {
-    document.getElementById('editTradeModal').classList.remove('active');
+    // Try both ID formats for compatibility
+    const modal = document.getElementById('edit-trade-modal') || document.getElementById('editTradeModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
 }
+
 
 function openViewModal(tradeId) {
     const trade = allTrades.find(t => t.id === tradeId);
