@@ -117,28 +117,33 @@ async function loadTrades() {
 
 async function addTrade(tradeData) {
     try {
+        // Destructure to remove id if it exists
+        const { id, ...cleanData } = tradeData;
+        
+        // Create trade without id
         const trade = {
-            ...tradeData,
-            id: undefined, // Let IndexedDB auto-generate
+            ...cleanData,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         };
         
-        const id = await db.add('trades', trade);
-        trade.id = id;
+        // IndexedDB auto-generates the id
+        const newId = await db.add('trades', trade);
+        trade.id = newId;
         allTrades.unshift(trade);
         
-        // Update portfolio balance
-        portfolioSettings.currentBalance += parseFloat(tradeData.net_pl) || 0;
+        // Update portfolio
+        portfolioSettings.currentBalance += parseFloat(trade.net_pl) || 0;
         await savePortfolioSettings();
         
-        console.log('Trade added successfully:', trade);
+        console.log('Trade added successfully with ID:', newId);
         return trade;
     } catch (error) {
         console.error('Failed to add trade:', error);
         throw error;
     }
 }
+
 
 async function updateTrade(tradeData) {
     try {
