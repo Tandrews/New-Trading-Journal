@@ -295,47 +295,81 @@ function switchTab(tabName) {
 }
 
 // Trade Form Handlers
-async function handleAddTrade(e) {
-    e.preventDefault();
+async function handleAddTrade(event) {
+    event.preventDefault();
     
     try {
-        const formData = new FormData(e.target);
+        const formData = new FormData(event.target);
+        
+        // Get form values
+        const entryPrice = parseFloat(formData.get('entry-price')) || 0;
+        const exitPrice = parseFloat(formData.get('exit-price')) || 0;
+        const quantity = parseInt(formData.get('quantity')) || 1;
+        const premium = parseFloat(formData.get('premium')) || 0;
+        const fees = parseFloat(formData.get('fees')) || 0;
+        
+        // Calculate net P&L
+        let net_pl;
+        if (entryPrice > 0 && exitPrice > 0) {
+            // Calculate from Entry/Exit prices
+            // For options: (Exit - Entry) * Quantity * 100 + Fees
+            net_pl = (exitPrice - entryPrice) * quantity * 100 + fees;
+        } else {
+            // Fall back to Premium + Fees
+            net_pl = premium + fees;
+        }
+        
+        // Create trade object
         const tradeData = {
-            date: document.getElementById('tradeDate').value,
-            ticker: document.getElementById('ticker').value.toUpperCase(),
-            strategy: document.getElementById('strategy').value,
-            option_type: document.getElementById('optionType').value,
-            strike: parseFloat(document.getElementById('strike').value) || null,
-            expiration: document.getElementById('expiration').value || null,
-            quantity: parseInt(document.getElementById('quantity').value),
-            entry_price: parseFloat(document.getElementById('entryPrice').value),
-            exit_price: parseFloat(document.getElementById('exitPrice').value) || null,
-            premium: parseFloat(document.getElementById('premium').value),
-            fees: parseFloat(document.getElementById('fees').value) || 0,
-            net_pl: parseFloat(document.getElementById('netPL').value),
-            outcome: document.getElementById('outcome').value,
-            delta: parseFloat(document.getElementById('delta').value) || null,
-            gamma: parseFloat(document.getElementById('gamma').value) || null,
-            theta: parseFloat(document.getElementById('theta').value) || null,
-            vega: parseFloat(document.getElementById('vega').value) || null,
-            trade_notes: document.getElementById('tradeNotes').value || '',
-            post_trade_analysis: document.getElementById('postTradeAnalysis').value || ''
+            date: formData.get('trade-date'),
+            ticker: (formData.get('ticker') || '').toUpperCase(),
+            strategy: formData.get('strategy'),
+            option_type: formData.get('option-type'),
+            strike: formData.get('strike'),
+            expiration: formData.get('expiration'),
+            quantity: quantity,
+            entry_price: entryPrice || null,
+            exit_price: exitPrice || null,
+            premium: premium,
+            fees: fees,
+            net_pl: net_pl,
+            outcome: net_pl >= 0 ? 'Win' : 'Loss',
+            delta: parseFloat(formData.get('delta')) || null,
+            gamma: parseFloat(formData.get('gamma')) || null,
+            theta: parseFloat(formData.get('theta')) || null,
+            vega: parseFloat(formData.get('vega')) || null,
+            trade_notes: formData.get('trade-notes'),
+            post_trade_analysis: formData.get('post-trade-analysis') || ''
         };
         
-        await addTrade(tradeData);
-        e.target.reset();
-        document.getElementById('tradeDate').valueAsDate = new Date();
+        // Add trade
+        const trade = await addTrade(tradeData);
         
-        displayTrades();
+        // Update display
+        await loadTrades();
+        renderTradeHistory();
         updateDashboard();
-        updateFilters();
         
-        showMessage('Trade added successfully!', 'success');
+        // Reset form
+        event.target.reset();
+        
+        // Show success message
+        alert(`✅ Trade added successfully!\nNet P&L: $${net_pl.toFixed(2)}\nOutcome: ${trade.outcome}`);
+        
     } catch (error) {
         console.error('Failed to add trade:', error);
-        showMessage('Failed to add trade. Please try again.', 'error');
+        alert('❌ Failed to add trade: ' + error.message);
     }
 }
+
+// Make sure the event listener is attached
+document.addEventListener('DOMContentLoaded', () => {
+    const addTradeForm = document.getElementById('add-trade-form');
+    if (addTradeForm) {
+        addTradeForm.addEventListener('submit', handleAddTrade);
+    }
+});
+
 
 async function handleEditTrade(e) {
     e.preventDefault();
@@ -376,6 +410,101 @@ async function handleEditTrade(e) {
         showMessage('Failed to update trade. Please try again.', 'error');
     }
 }
+// Handle edit trade form submission
+async function handleEditTradeSubmit(event) {
+    event.preventDefault();
+    
+    try {
+        const tradeId = parseInt(document.getElementById('edit-trade-id').value);
+        
+        // Get original trade to calculate P&L difference
+        const originalTrade = await db.get('trades', tradeId);
+        if (!originalTrade) {
+            alert('Original trade not found');
+            return;
+        }
+        
+        const originalPL = parseFloat(originalTrade.net_pl) || 0;
+        
+        // Get form values
+        const entryPrice = parseFloat(document.getElementById('edit-entry-price').value) || 0;
+        const exitPrice = parseFloat(document.getElementById('edit-exit-price').value) || 0;
+        const quantity = parseInt(document.getElementById('edit-quantity').value) || 1;
+        const premium = parseFloat(document.getElementById('edit-premium').value) || 0;
+        const fees = parseFloat(document.getElementById('edit-fees').value) || 0;
+        
+        // Calculate net P&L based on entry/exit if both are provided
+        let net_pl;
+        if (entryPrice > 0 && exitPrice > 0) {
+            // Net P&L = (Exit - Entry) * Quantity * 100 (for options contracts)
+            net_pl = (exitPrice - entryPrice) * quantity * 100 + fees;
+        } else {
+            // Fall back to premium + fees
+            net_pl = premium + fees;
+        }
+        
+        // Create updated trade object
+        const updatedTrade = {
+            id: tradeId,
+            date: document.getElementById('edit-date').value,
+            ticker: (document.getElementById('edit-ticker').value || '').toUpperCase(),
+            strategy: document.getElementById('edit-strategy').value,
+            option_type: document.getElementById('edit-option-type').value,
+            strike: document.getElementById('edit-strike').value,
+            expiration: document.getElementById('edit-expiration').value,
+            quantity: quantity,
+            entry_price: entryPrice || null,
+            exit_price: exitPrice || null,
+            premium: premium,
+            fees: fees,
+            net_pl: net_pl,
+            outcome: net_pl >= 0 ? 'Win' : 'Loss',
+            delta: parseFloat(document.getElementById('edit-delta').value) || null,
+            gamma: parseFloat(document.getElementById('edit-gamma').value) || null,
+            theta: parseFloat(document.getElementById('edit-theta').value) || null,
+            vega: parseFloat(document.getElementById('edit-vega').value) || null,
+            trade_notes: document.getElementById('edit-notes').value,
+            post_trade_analysis: document.getElementById('edit-post-trade-analysis').value,
+            updated_at: new Date().toISOString(),
+            created_at: originalTrade.created_at
+        };
+        
+        // Update in database
+        await db.put('trades', updatedTrade);
+        
+        // Update portfolio balance
+        const plDifference = net_pl - originalPL;
+        portfolioSettings.currentBalance += plDifference;
+        await savePortfolioSettings();
+        
+        // Update in-memory array
+        const index = allTrades.findIndex(t => t.id === tradeId);
+        if (index !== -1) {
+            allTrades[index] = updatedTrade;
+        }
+        
+        // Close modal and refresh
+        closeEditModal();
+        await loadTrades();
+        renderTradeHistory();
+        updateDashboard();
+        
+        alert(`✅ Trade updated! Net P&L: $${net_pl.toFixed(2)}`);
+        
+    } catch (error) {
+        console.error('Failed to update trade:', error);
+        alert('❌ Failed to update trade: ' + error.message);
+    }
+}
+
+// Attach event listener to edit form
+document.addEventListener('DOMContentLoaded', () => {
+    const editForm = document.getElementById('edit-trade-form');
+    if (editForm) {
+        editForm.addEventListener('submit', handleEditTradeSubmit);
+    }
+});
+
 
 async function handlePortfolioUpdate(e) {
     e.preventDefault();
